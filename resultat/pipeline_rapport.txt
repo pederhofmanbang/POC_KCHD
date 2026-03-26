@@ -1,0 +1,69 @@
+╔══════════════════════════════════════════════════════╗
+║  KCHD Pipeline — Katarakt väntetidsdata             ║
+╚══════════════════════════════════════════════════════╝
+Källa: testdata/katarakt_testdata_100__1__VGR.csv
+Utdata: resultat//
+Tid: 2026-03-26 16:49:48
+
+══ STEG 1: Läsa rådata ══
+   Rader: 100
+   Kolumner: 35
+   Kolumnnamn: aktivitet_icd, aktivitet_kva, aktivitetskod, ankomst_datum, avvikelsekod, beslut_datum, bokningssatt, fas, fodelsear, hsaid_enhet...
+   → steg1_radata.tsv
+
+══ STEG 2: Filtrera (katarakt + ögon) ══
+   Totalt in: 100
+   Kvar: 100 (genomförda: 70, väntande: 30)
+   → steg2_filtrerade.tsv
+
+══ STEG 3: Beräkna väntetider (per patient) ══
+   Beräknade: 70 patienter
+   Väntetid: min=10, median=58.0, max=177 dagar
+   Inom VG: 49 JA, 4 NEJ, 17 ej VG
+   → steg3_beraknade.tsv
+
+══ STEG 4: Aggregera till KPI:er ══
+   Sjukhus: 4
+     Sahlgrenska Universitetss  n= 19  VG=85.7%  median=61d
+     Skaraborgs Sjukhus         n= 13  VG=100.0%  median=58d
+     Södra Älvsborgs Sjukhus    n= 20  VG=88.2%  median=54.0d
+     NU-sjukvården              n= 18  VG=100.0%  median=61.5d
+   Per-dimension-rader: 84
+   → steg4_kpi_total.tsv + steg4_kpi_per_dim.tsv
+
+══ STEG 5: Kvalitetskontroll (DQ0-DQ6) ══
+   Kontroller: 10
+   Passerade:  10 ✅
+   → steg5_dq.tsv
+
+══ STEG 6: FHIR-tabell (fhir_measure_report) ══
+   Totalrader:    20
+   Per-dimension: 420
+   FHIR-rader:    440
+   → steg6_fhir_tabell.tsv
+
+══ STEG 7: FHIR JSON Bundle ══
+   FHIR Bundle: 12 MeasureReports, 219,111 tecken
+   ✅ Validering OK
+
+══ STEG 8: Skicka till hubb (simulerat) ══
+   POST → https://hub.kchd.se/fhir/Bundle
+   Status: 200 OK
+   MeasureReports: 12
+   KPI-grupper: 20
+   Validering: ✅ Passerad
+   → steg8_hubb_kvittens.json
+
+══════════════════════════════════════════
+SAMMANFATTNING
+══════════════════════════════════════════
+  Steg 1: 100 rader × 36 kolumner
+  Steg 2: 70 genomförda + 30 väntande
+  Steg 3: 70 patienter med väntetider
+  Steg 4: 4 sjukhus × 16 KPI:er
+  Steg 5: DQ ✅ PASSERAT
+  Steg 6: 440 FHIR-rader
+  Steg 7: 12 MeasureReports
+  Steg 8: Hubb ✅ MOTTAGET
+
+  RESULTAT: ✅ HELA KEDJAN GRÖN

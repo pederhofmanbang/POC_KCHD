@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-03-26T16:49:49.082575",
+  "status": "accepted",
+  "endpoint": "https://hub.kchd.se/fhir/Bundle",
+  "method": "POST",
+  "response_code": 200,
+  "message": "Bundle mottagen och validerad",
+  "details": {
+    "measure_reports": 12,
+    "total_groups": 20,
+    "kpi_coverage": "16/16",
+    "validation": "passed",
+    "stored": true
+  }
+}
