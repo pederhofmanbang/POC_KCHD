@@ -1,52 +1,66 @@
-using System.Text.Json;
-using System.Text.Json.Nodes;
+using Hl7.Fhir.Model;
+using Hl7.Fhir.Serialization;
 using KchdFhirSerializer;
 
 // KCHD FHIR-serialiserare — C#-implementation
-// Läser fhir_measure_report (TSV) och producerar FHIR R4 Bundle JSON.
+// Läser fhir_measure_report (TSV/ODBC) och producerar FHIR R4 Bundle JSON.
 // Referens: python/fhir_serializer.py
 
 var inputPath = "";
 var outputPath = "fhir_bundle.json";
 var validate = false;
 var reportDate = "2026-03-26";
+string? odbcConnection = null;
+string query = "SELECT * FROM fhir_measure_report";
 
-// Enkel arg-parsing (matchar Python-referensens CLI)
 for (int i = 0; i < args.Length; i++)
 {
-    if (args[i] == "-o" || args[i] == "--output")
+    if (args[i] is "-o" or "--output")
         outputPath = args[++i];
-    else if (args[i] == "-v" || args[i] == "--validate")
+    else if (args[i] is "-v" or "--validate")
         validate = true;
-    else if (args[i] == "-d" || args[i] == "--date")
+    else if (args[i] is "-d" or "--date")
         reportDate = args[++i];
+    else if (args[i] is "--odbc")
+        odbcConnection = args[++i];
+    else if (args[i] is "--query")
+        query = args[++i];
     else if (!args[i].StartsWith("-"))
         inputPath = args[i];
 }
 
-if (string.IsNullOrEmpty(inputPath))
+// 1. Läs rader — ODBC eller TSV
+List<Dictionary<string, string>> rows;
+
+if (!string.IsNullOrEmpty(odbcConnection))
 {
-    Console.Error.WriteLine("Användning: KchdFhirSerializer <input.tsv> [-o output.json] [-v] [-d datum]");
+    Console.WriteLine($"Läser från Denodo via ODBC...");
+    rows = DenodoReader.ReadFromOdbc(odbcConnection, query);
+}
+else if (!string.IsNullOrEmpty(inputPath))
+{
+    rows = DenodoReader.ReadFromTsv(inputPath);
+}
+else
+{
+    Console.Error.WriteLine("Användning:");
+    Console.Error.WriteLine("  KchdFhirSerializer <input.tsv> [-o output.json] [-v] [-d datum]");
+    Console.Error.WriteLine("  KchdFhirSerializer --odbc \"DSN=DenodoVGR\" [--query \"SELECT...\"] [-o output.json] [-v]");
     return 1;
 }
 
-// 1. Läs rader
-var rows = TsvReader.Read(inputPath);
+Console.WriteLine($"Rader: {rows.Count}");
 
 // 2. Bygg FHIR Bundle
 var bundle = MeasureReportBuilder.BuildBundle(rows, reportDate);
 
-// 3. Serialisera till JSON
-var options = new JsonSerializerOptions
-{
-    WriteIndented = true,
-    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-};
-var json = bundle.ToJsonString(options);
+// 3. Serialisera till JSON med Hl7.Fhir.R4
+var serializer = new FhirJsonSerializer(new SerializerSettings { Pretty = true });
+var json = serializer.SerializeToString(bundle);
 File.WriteAllText(outputPath, json);
 
-var entryCount = bundle["entry"]?.AsArray()?.Count ?? 0;
-Console.WriteLine($"FHIR Bundle: {entryCount} MeasureReports, {json.Length:N0} tecken");
+Console.WriteLine($"FHIR Bundle: {bundle.Entry.Count} MeasureReports, {json.Length:N0} tecken");
+Console.WriteLine($"Output: {outputPath}");
 
 // 4. Validera
 if (validate)

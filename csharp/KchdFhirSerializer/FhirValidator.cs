@@ -1,65 +1,54 @@
-using System.Text.Json.Nodes;
+using Hl7.Fhir.Model;
 
 namespace KchdFhirSerializer;
 
 /// <summary>
-/// Grundläggande FHIR-validering av bundlen.
+/// FHIR-validering av MeasureReport-bundlen.
+/// Kontrollerar obligatoriska fält och värdeintervall.
 /// Matchar Python-referensens validate_bundle().
 /// </summary>
 public static class FhirValidator
 {
-    public static List<string> Validate(JsonObject bundle)
+    public static List<string> Validate(Bundle bundle)
     {
         var errors = new List<string>();
-        var entries = bundle["entry"]?.AsArray();
-        if (entries == null) { errors.Add("Ingen 'entry' i bundle"); return errors; }
 
-        for (int i = 0; i < entries.Count; i++)
+        for (int i = 0; i < bundle.Entry.Count; i++)
         {
-            var mr = entries[i]?.AsObject()?["resource"]?.AsObject();
-            if (mr == null) { errors.Add($"Entry {i}: resource saknas"); continue; }
-
-            if (mr["resourceType"]?.GetValue<string>() != "MeasureReport")
+            var resource = bundle.Entry[i].Resource;
+            if (resource is not MeasureReport mr)
+            {
                 errors.Add($"Entry {i}: resourceType != MeasureReport");
-            if (mr["status"]?.GetValue<string>() != "complete")
+                continue;
+            }
+
+            if (mr.Status != MeasureReport.MeasureReportStatus.Complete)
                 errors.Add($"Entry {i}: status != complete");
-            if (mr["type"]?.GetValue<string>() != "summary")
+            if (mr.Type != MeasureReport.MeasureReportType.Summary)
                 errors.Add($"Entry {i}: type != summary");
-            if (string.IsNullOrEmpty(mr["measure"]?.GetValue<string>()))
+            if (string.IsNullOrEmpty(mr.Measure))
                 errors.Add($"Entry {i}: measure saknas");
-
-            var periodStart = mr["period"]?["start"]?.GetValue<string>();
-            if (string.IsNullOrEmpty(periodStart))
+            if (string.IsNullOrEmpty(mr.Period?.Start))
                 errors.Add($"Entry {i}: period.start saknas");
-
-            var reporterValue = mr["reporter"]?["identifier"]?["value"]?.GetValue<string>();
-            if (string.IsNullOrEmpty(reporterValue))
+            if (string.IsNullOrEmpty(mr.Reporter?.Identifier?.Value))
                 errors.Add($"Entry {i}: reporter.identifier.value saknas");
 
-            var groups = mr["group"]?.AsArray();
-            if (groups != null)
+            for (int j = 0; j < mr.Group.Count; j++)
             {
-                for (int j = 0; j < groups.Count; j++)
-                {
-                    var g = groups[j]?.AsObject();
-                    var coding = g?["code"]?["coding"]?.AsArray();
-                    if (coding == null || coding.Count == 0)
-                        errors.Add($"Entry {i} group {j}: code saknas");
-                }
+                var g = mr.Group[j];
+                if (g.Code?.Coding == null || g.Code.Coding.Count == 0)
+                    errors.Add($"Entry {i} group {j}: code saknas");
             }
 
             // Proportion: score 0-100
-            var measure = mr["measure"]?.GetValue<string>() ?? "";
-            if (measure.Contains("vardgaranti") && groups != null)
+            if (mr.Measure?.Contains("vardgaranti") == true)
             {
-                foreach (var g in groups)
+                foreach (var g in mr.Group)
                 {
-                    var sv = g?["measureScore"]?["value"];
-                    if (sv != null)
+                    if (g.MeasureScore?.Value is decimal sv)
                     {
-                        var val = sv.GetValue<double>();
-                        if (val < 0 || val > 100)
-                            errors.Add($"Entry {i}: measureScore {val} utanför 0-100%");
+                        if (sv < 0 || sv > 100)
+                            errors.Add($"Entry {i}: measureScore {sv} utanför 0-100%");
                     }
                 }
             }
