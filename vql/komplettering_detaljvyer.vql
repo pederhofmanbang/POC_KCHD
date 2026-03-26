@@ -1,0 +1,172 @@
+-- ============================================================
+-- KOMPLETTERING: Tre vyer som saknades i första leveransen
+--
+-- 1. src_vantande          — basvy för väntande patienter
+-- 2. res_genomford_detalj  — en rad per genomförd operation
+-- 3. res_vantande_detalj   — en rad per väntande patient
+--
+-- Kör vyerna i ordningen nedan (1 → 2 → 3).
+-- Nr 1 kräver att ni anpassar kolumnnamn och tabellnamn
+-- (samma princip som src_genomford).
+-- Nr 2 och 3 kör ni rakt av utan ändringar.
+-- ============================================================
+
+
+-- ──────────────────────────────────────────────
+-- 1/3: src_vantande
+--      Basvy för väntande patienter.
+--      Denna saknades — calc_vantande refererar till den.
+--
+--      ⚠️  INNAN NI KÖR: Ändra kolumnnamn + tabellnamn,
+--      samma princip som ni redan gjort för src_genomford.
+--
+--      Om genomförda och väntande ligger i SAMMA tabell
+--      i ert datalager, peka mot samma tabell men filtrera
+--      på väntande (t.ex. WHERE start_datum IS NULL).
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW src_vantande AS
+SELECT
+  -- ⚠️ ÄNDRA KOLUMNNAMNEN TILL VÄNSTER (samma som i src_genomford)
+  kontakt_id          AS vardkontakt_id,    -- ⚠️ ändra
+  pat_id              AS patient_id,        -- ⚠️ ändra
+  kon_kod             AS kon,               -- ⚠️ ändra
+  fodelsar            AS fodelsear,         -- ⚠️ ändra
+  '51'                AS regionkod,
+  hsa_region          AS hsaid_region,      -- ⚠️ ändra
+  hsa_vardgivare      AS hsaid_vardgivare,  -- ⚠️ ändra
+  hsa_vardenhet       AS hsaid_vardenhet,   -- ⚠️ ändra
+  hsa_enhet           AS hsaid_enhet,       -- ⚠️ ändra
+  sjukhus_kod         AS sjukhuskod,        -- ⚠️ ändra
+  sjukhus_namn        AS sjukhusnamn,       -- ⚠️ ändra
+  mvo                 AS mvo_kod,           -- ⚠️ ändra
+  '51101'             AS aktivitetskod,
+  kva_aktivitet       AS aktivitet_kva,     -- ⚠️ ändra
+  icd_aktivitet       AS aktivitet_icd,     -- ⚠️ ändra
+  kva                 AS kva_kod,           -- ⚠️ ändra
+  yrke                AS yrkeskategori,     -- ⚠️ ändra
+  bokning             AS bokningssatt,      -- ⚠️ ändra
+  kontakttyp          AS vardkontakttyp,    -- ⚠️ ändra
+  vg_flagga           AS vardgaranti,       -- ⚠️ ändra
+  avvikelse           AS avvikelsekod,      -- ⚠️ ändra
+  remtyp              AS remittenttyp,      -- ⚠️ ändra
+  rem_hsaid           AS remittent_hsaid,   -- ⚠️ ändra
+  remiss_id           AS remiss_id,         -- ⚠️ ändra
+  rem_datum           AS remiss_datum,      -- ⚠️ ändra
+  rem_ankomst         AS ankomst_datum,     -- ⚠️ ändra
+  beslut_datum        AS beslut_datum,      -- ⚠️ ändra
+  NULL                AS start_datum,       -- Alltid NULL för väntande
+  med_maldatum        AS medicinskt_maldatum, -- ⚠️ ändra
+  kommun_kod          AS lkf,               -- ⚠️ ändra
+  hsa_listning        AS hsaid_listning,    -- ⚠️ ändra
+  period              AS matperiod          -- ⚠️ ändra
+
+-- ⚠️ ÄNDRA TABELLNAMNET NEDAN
+FROM ds_datalager.v_vantande_specialiserad;
+
+
+-- ──────────────────────────────────────────────
+-- 2/3: res_genomford_detalj
+--      En rad per genomförd kataraktoperation.
+--      Ingen ändring behövs.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW res_genomford_detalj AS
+SELECT
+  vardkontakt_id,
+  patient_id,
+  kon,
+  fodelsear,
+  aldersgrupp,
+  regionkod,
+  sjukhuskod,
+  sjukhusnamn,
+  hsaid_vardenhet,
+  mvo_kod,
+  kva_kod,
+  aktivitetskod,
+  yrkeskategori,
+  bokningssatt,
+  vardkontakttyp,
+  vardgaranti,
+  avvikelsekod,
+  remittenttyp,
+  remittent_hsaid,
+  remiss_datum,
+  ankomst_datum,
+  beslut_datum,
+  start_datum,
+  medicinskt_maldatum,
+  lkf,
+  hsaid_listning,
+  matperiod,
+  vantetid_dagar,
+  vantetid_intervall,
+  uppfyller_vg,
+  total_patientresa_dagar,
+  remiss_till_beslut_dagar,
+  op_ar,
+  op_manad
+FROM calc_vantetid_genomford;
+
+
+-- ──────────────────────────────────────────────
+-- 3/3: res_vantande_detalj
+--      En rad per patient som väntar på operation.
+--      Ingen ändring behövs.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW res_vantande_detalj AS
+SELECT
+  vardkontakt_id,
+  patient_id,
+  kon,
+  fodelsear,
+  regionkod,
+  sjukhuskod,
+  sjukhusnamn,
+  hsaid_vardenhet,
+  mvo_kod,
+  kva_kod,
+  aktivitetskod,
+  yrkeskategori,
+  vardgaranti,
+  avvikelsekod,
+  remittenttyp,
+  remittent_hsaid,
+  remiss_datum,
+  beslut_datum,
+  medicinskt_maldatum,
+  lkf,
+  hsaid_listning,
+  matperiod,
+  vantetid_dagar,
+  vantetid_intervall,
+  rapportdatum,
+  vantestatus,
+  bryter_vg
+FROM calc_vantande;
+
+
+-- ──────────────────────────────────────────────
+-- VERIFIERING efter körning:
+--
+-- 1) Kontrollera att src_vantande finns:
+--    SELECT COUNT(*) FROM src_vantande;
+--    → Ska ge antalet väntande patienter
+--
+-- 2) Kontrollera att calc_vantande nu fungerar:
+--    SELECT vantetid_dagar, vantestatus, bryter_vg
+--    FROM calc_vantande LIMIT 10;
+--    → Ska ge rader (inte fel om saknad vy)
+--
+-- 3) Kontrollera detaljvyerna:
+--    SELECT COUNT(*) FROM res_genomford_detalj;
+--    SELECT COUNT(*) FROM res_vantande_detalj;
+--
+-- 4) Stickprov genomförda:
+--    SELECT vardkontakt_id, beslut_datum, start_datum,
+--           vantetid_dagar, uppfyller_vg
+--    FROM res_genomford_detalj LIMIT 10;
+--    → vantetid_dagar ska vara = start_datum - beslut_datum
+-- ──────────────────────────────────────────────

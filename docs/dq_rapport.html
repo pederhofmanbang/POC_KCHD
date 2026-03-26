@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KCHD DQ-rapport — Katarakt</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f8fafc;color:#1e293b;line-height:1.6}
+.wrap{max-width:900px;margin:0 auto;padding:24px 16px}
+.mono{font-family:'Cascadia Code','Consolas','Courier New',monospace}
+
+/* Header */
+.header{margin-bottom:24px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px}
+.b-kchd{background:#1e40af;color:#fff}
+.b-ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.b-fel{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.b-demo{background:#fef3c7;color:#92400e}
+.b-live{background:#dbeafe;color:#1e40af}
+.b-local{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+h1{font-size:22px;font-weight:700;letter-spacing:-0.02em}
+.sub{font-size:14px;color:#64748b;margin-top:4px}
+
+/* Local notice */
+.local-notice{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start}
+.local-notice .icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.local-notice .text{font-size:13px;color:#166534;line-height:1.6}
+.local-notice strong{color:#15803d}
+
+/* Input area */
+.input-area{background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:20px;overflow:hidden}
+.input-header{padding:16px 20px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between}
+.input-header h2{font-size:15px;font-weight:600}
+.input-steps{padding:20px;font-size:13px;color:#475569;line-height:1.8}
+.input-steps .step{display:flex;gap:10px;margin-bottom:12px;align-items:flex-start}
+.step-nr{width:24px;height:24px;border-radius:12px;background:#1e40af;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.input-steps code{background:#f1f5f9;padding:2px 8px;border-radius:4px;font-family:'Cascadia Code','Consolas',monospace;font-size:12px;color:#1e40af}
+textarea{width:100%;height:140px;border:none;border-top:1px solid #e2e8f0;padding:14px 20px;font-family:'Cascadia Code','Consolas',monospace;font-size:12px;resize:vertical;background:#fafbfc}
+textarea:focus{outline:none;background:#fff}
+textarea::placeholder{color:#94a3b8}
+
+/* Status bar after paste */
+.status-bar{padding:12px 20px;border-top:1px solid #e2e8f0;display:none;align-items:center;gap:8px;font-size:13px}
+.status-bar.visible{display:flex}
+.status-bar.ok{background:#f0fdf4;color:#166534}
+.status-bar.err{background:#fef2f2;color:#991b1b}
+
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid #e2e8f0;margin-bottom:16px}
+.tab{padding:10px 18px;font-size:13px;font-weight:500;color:#64748b;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent}
+.tab.active{color:#1e40af;border-bottom-color:#1e40af;font-weight:600}
+.tab:hover{color:#1e293b}
+
+/* Score cards */
+.scores{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.score{flex:1;min-width:140px;border-radius:10px;padding:16px;text-align:center}
+.score .num{font-size:36px;font-weight:800;font-family:'Cascadia Code','Consolas',monospace}
+.score .label{font-size:12px;margin-top:2px}
+.score-ok{background:#f0fdf4;border:1px solid #bbf7d0}
+.score-ok .num{color:#166534}
+.score-ok .label{color:#166534}
+.score-neutral{background:#fff;border:1px solid #e2e8f0}
+.score-neutral .num{color:#1e293b}
+.score-neutral .label{color:#64748b}
+.score-bad{background:#fef2f2;border:1px solid #fecaca}
+.score-bad .num{color:#991b1b}
+.score-bad .label{color:#991b1b}
+
+/* DQ rows */
+.dq-list{background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
+.dq-row{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #f1f5f9}
+.dq-row:last-child{border-bottom:none}
+.dq-icon{width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.dq-icon-ok{background:#f0fdf4}
+.dq-icon-fail{background:#fef2f2}
+.dq-icon-info{background:#eff6ff}
+.dq-id{font-family:'Cascadia Code','Consolas',monospace;font-size:12px;color:#1e40af;font-weight:700;min-width:30px}
+.dq-name{font-size:14px;font-weight:600;color:#1e293b}
+.dq-desc{font-size:12px;color:#64748b;margin-top:1px}
+.dq-detail{font-size:11px;font-family:'Cascadia Code','Consolas',monospace;color:#94a3b8;margin-top:3px}
+.dq-detail.fail{color:#dc2626}
+.dq-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;margin-left:8px}
+.dq-badge-ok{background:#f0fdf4;color:#166534}
+.dq-badge-fail{background:#fef2f2;color:#991b1b}
+
+/* Table */
+.tbl-wrap{background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
+.tbl-cmd{padding:10px 18px;background:#1e293b;color:#86efac;font-family:'Cascadia Code','Consolas',monospace;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-weight:600;font-size:11px;font-family:'Cascadia Code','Consolas',monospace}
+td{padding:6px 12px;border-bottom:1px solid #f8fafc}
+.cell-dq{font-family:'Cascadia Code','Consolas',monospace;color:#1e40af;font-weight:700}
+.cell-mono{font-family:'Cascadia Code','Consolas',monospace;font-size:11px}
+.cell-val{font-family:'Cascadia Code','Consolas',monospace;font-weight:600;text-align:right}
+.status-pill{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;display:inline-block}
+.pill-ok{background:#f0fdf4;color:#166534}
+.pill-fail{background:#fef2f2;color:#991b1b}
+.pill-info{background:#eff6ff;color:#1e40af}
+tr.row-fail{background:#fef2f2}
+
+/* Pct bars */
+.pct-row{display:flex;align-items:center;gap:8px}
+.pct-track{flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden}
+.pct-fill{height:100%;border-radius:4px}
+.pct-green{background:#16a34a}
+.pct-amber{background:#d97706}
+.pct-red{background:#dc2626}
+.pct-val{font-family:'Cascadia Code','Consolas',monospace;font-size:11px;color:#64748b;min-width:40px;text-align:right}
+
+/* Info box */
+.info-box{background:#eff6ff;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e40af;line-height:1.6}
+
+.footer{margin-top:28px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- Header -->
+<div class="header">
+  <div class="badges">
+    <span class="badge b-kchd">KCHD</span>
+    <span class="badge b-ok" id="badge-status">Alla kontroller OK</span>
+    <span class="badge b-demo" id="badge-source">Demodata</span>
+    <span class="badge b-local">Körs lokalt — ingen data skickas</span>
+  </div>
+  <h1>Datakvalitetsrapport — Katarakt</h1>
+  <div class="sub" id="subtitle">Ladda data nedan för att se rapporten</div>
+</div>
+
+<!-- Local notice -->
+<div class="local-notice">
+  <span class="icon">🔒</span>
+  <div class="text">
+    <strong>Denna fil körs helt lokalt i er webbläsare.</strong> Ingen data skickas till internet, molntjänster eller tredje part. All bearbetning sker på er dator. Ni kan verifiera detta genom att koppla bort nätverket — rapporten fungerar ändå.
+  </div>
+</div>
+
+<!-- Input -->
+<div class="input-area">
+  <div class="input-header">
+    <h2>Ladda in data</h2>
+  </div>
+  <div class="input-steps">
+    <div class="step">
+      <span class="step-nr">1</span>
+      <span>Kör i Denodo: <code>SELECT * FROM dq_rapport_data</code></span>
+    </div>
+    <div class="step">
+      <span class="step-nr">2</span>
+      <span>Markera alla rader i resultatet (utan kolumnrubriker). Kopiera.</span>
+    </div>
+    <div class="step">
+      <span class="step-nr">3</span>
+      <span>Klistra in nedan — rapporten uppdateras direkt.</span>
+    </div>
+  </div>
+  <textarea id="data-input" placeholder="Klistra in här — tab, semikolon eller komma fungerar alla"></textarea>
+  <div class="status-bar" id="status-bar">
+    <span id="status-icon"></span>
+    <span id="status-text"></span>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" data-tab="summary" onclick="showTab('summary')">Sammanfattning</button>
+  <button class="tab" data-tab="ifyllnad" onclick="showTab('ifyllnad')">DQ4 Ifyllnadsgrad</button>
+  <button class="tab" data-tab="raw" onclick="showTab('raw')">Alla rader</button>
+</div>
+
+<!-- Tab content -->
+<div id="tab-summary"></div>
+<div id="tab-ifyllnad" style="display:none"></div>
+<div id="tab-raw" style="display:none"></div>
+
+<div class="footer">
+  <span>KCHD Datakvalitetsrapport | Katarakt | DQ0–DQ6</span>
+  <span>Filen körs lokalt — ingen data lämnar er dator</span>
+</div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════
+// Demo data — genererad av test_dq.py
+// Ändra ALDRIG manuellt
+// ══════════════════════════════════════
+const DEMO = `DQ0\texistens\tsrc_genomford\t70\tOK
+DQ0\texistens\tsrc_vantande\t30\tOK
+DQ1\tnull_genomford\tbeslut_datum\t0\tOK
+DQ1\tnull_genomford\tkva_kod\t0\tOK
+DQ1\tnull_genomford\tmvo_kod\t0\tOK
+DQ1\tnull_genomford\tvardgaranti\t0\tOK
+DQ1\tnull_genomford\tkon\t0\tOK
+DQ1\tnull_genomford\tfodelsear\t0\tOK
+DQ1\tnull_genomford\tstart_datum\t0\tOK
+DQ1\tnull_vantande\tbeslut_datum\t0\tOK
+DQ1\tnull_vantande\tkva_kod\t0\tOK
+DQ2\tdoman\tkva_ej_i_ref\t0\tOK
+DQ2\tdoman\tregionkod_ej_51\t0\tOK
+DQ2\tdoman\tmvo_ej_511\t0\tOK
+DQ3\tintervall\tnegativ_vantetid\t0\tOK
+DQ3\tintervall\torimligt_fodelsear\t0\tOK
+DQ3\tintervall\tvantande_med_start\t0\tOK
+DQ4\tifyllnad_genomford\tbeslut_datum\t100.0\tINFO
+DQ4\tifyllnad_genomford\tmedicinskt_maldatum\t68.6\tINFO
+DQ4\tifyllnad_genomford\tavvikelsekod\t14.3\tINFO
+DQ4\tifyllnad_genomford\tlkf\t100.0\tINFO
+DQ4\tifyllnad_genomford\thsaid_listning\t85.7\tINFO
+DQ4\tifyllnad_genomford\tremiss_datum\t80.0\tINFO
+DQ4\tifyllnad_genomford\tremittent_hsaid\t80.0\tINFO
+DQ4\tifyllnad_vantande\tbeslut_datum\t100.0\tINFO
+DQ4\tifyllnad_vantande\tmedicinskt_maldatum\t80.0\tINFO
+DQ4\tifyllnad_vantande\tremiss_datum\t70.0\tINFO
+DQ5\tkorsvalidering\tres_vs_calc\t0\tOK
+DQ6\trimlighet\tandel_inom_90\t92.5\tOK
+DQ6\trimlighet\tmedian_vantetid\t58.0\tOK`;
+
+const DQ_NAMES = {DQ0:'Existens',DQ1:'Null-kontroll',DQ2:'Domänkontroll',DQ3:'Intervallkontroll',DQ5:'Korsvalidering',DQ6:'Rimlighet'};
+const DQ_DESC = {DQ0:'Finns data i basvyerna?',DQ1:'Obligatoriska fält ifyllda?',DQ2:'Alla värden giltiga?',DQ3:'Beräkningar rimliga?',DQ5:'Summor stämmer mellan lager?',DQ6:'KPI:er inom rimliga intervall?'};
+
+let isDemo = true;
+
+function parse(tsv) {
+  return tsv.trim().split('\n').filter(l=>l.trim()).map(line => {
+    const sep = line.includes('\t') ? '\t' : line.includes(';') ? ';' : ',';
+    const [dq,kontroll,objekt,varde,status] = line.split(sep).map(s=>s?.trim());
+    return {dq,kontroll,objekt,varde,status};
+  });
+}
+
+function render(rows, source) {
+  isDemo = source === 'demo';
+  const badge = document.getElementById('badge-source');
+  badge.textContent = isDemo ? 'Demodata' : 'Era data';
+  badge.className = 'badge ' + (isDemo ? 'b-demo' : 'b-live');
+
+  const checks = ['DQ0','DQ1','DQ2','DQ3','DQ5','DQ6'];
+  const summary = checks.map(id => {
+    const r = rows.filter(r=>r.dq===id);
+    const fel = r.filter(r=>r.status==='FEL').length;
+    return {id, ok:fel===0, fel, rows:r};
+  });
+  const dq4 = rows.filter(r=>r.dq==='DQ4');
+  const totalOk = summary.filter(d=>d.ok).length;
+  const totalFel = summary.reduce((a,d)=>a+d.fel,0);
+  const nPat = rows.filter(r=>r.dq==='DQ0').reduce((a,r)=>a+(parseInt(r.varde)||0),0);
+
+  // Update header
+  const statusBadge = document.getElementById('badge-status');
+  statusBadge.textContent = totalFel === 0 ? 'Alla kontroller OK' : totalFel + ' fel funna';
+  statusBadge.className = 'badge ' + (totalFel === 0 ? 'b-ok' : 'b-fel');
+  document.getElementById('subtitle').textContent = nPat + ' patienter | DQ0–DQ6 | ' + (isDemo ? 'Demodata (klistra in era egna ovan)' : 'Era data');
+
+  // Summary tab
+  let html = '<div class="scores">';
+  html += `<div class="score ${totalFel===0?'score-ok':'score-bad'}"><div class="num">${totalOk}/6</div><div class="label">kontroller OK</div></div>`;
+  html += `<div class="score ${totalFel>0?'score-bad':'score-neutral'}"><div class="num">${totalFel}</div><div class="label">fel funna</div></div>`;
+  html += `<div class="score score-neutral"><div class="num">${nPat}</div><div class="label">patienter</div></div>`;
+  html += '</div><div class="dq-list">';
+
+  summary.forEach(d => {
+    html += `<div class="dq-row">
+      <div class="dq-icon ${d.ok?'dq-icon-ok':'dq-icon-fail'}">${d.ok?'✅':'❌'}</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="dq-id">${d.id}</span>
+          <span class="dq-name">${DQ_NAMES[d.id]}</span>
+          <span class="dq-badge ${d.ok?'dq-badge-ok':'dq-badge-fail'}">${d.ok?'0 fel':d.fel+' fel'}</span>
+        </div>
+        <div class="dq-desc">${DQ_DESC[d.id]}</div>
+        ${d.rows.map(r=>`<div class="dq-detail ${r.status==='FEL'?'fail':''}">${r.objekt}: ${r.varde}${r.status==='FEL'?' ← FEL':''}</div>`).join('')}
+      </div>
+    </div>`;
+  });
+
+  // DQ4 row
+  html += `<div class="dq-row">
+    <div class="dq-icon dq-icon-info">ℹ️</div>
+    <div><div style="display:flex;align-items:center;gap:8px"><span class="dq-id">DQ4</span><span class="dq-name">Ifyllnadsgrad</span><span class="dq-badge" style="background:#eff6ff;color:#1e40af">informativt</span></div>
+    <div class="dq-desc">Se fliken "DQ4 Ifyllnadsgrad"</div></div>
+  </div>`;
+  html += '</div>';
+  document.getElementById('tab-summary').innerHTML = html;
+
+  // DQ4 tab
+  let h4 = '<div class="info-box"><strong>DQ4</strong> visar andel ifyllda fält. Grönt ≥90%, gult 50–89%, rött &lt;50%. Avvikelsekod ~14% är normalt (de flesta har ingen avvikelse).</div>';
+  h4 += '<div class="tbl-wrap"><table><thead><tr><th>Fält</th><th>Källa</th><th>Ifyllnadsgrad</th></tr></thead><tbody>';
+  dq4.forEach(r => {
+    const n = parseFloat(r.varde)||0;
+    const cls = n>=90?'pct-green':n>=50?'pct-amber':'pct-red';
+    h4 += `<tr><td class="cell-mono" style="font-weight:500">${r.objekt}</td><td style="color:#64748b;font-size:12px">${r.kontroll.replace('ifyllnad_','')}</td>
+    <td><div class="pct-row"><div class="pct-track"><div class="pct-fill ${cls}" style="width:${Math.min(n,100)}%"></div></div><span class="pct-val">${n}%</span></div></td></tr>`;
+  });
+  h4 += '</tbody></table></div>';
+  document.getElementById('tab-ifyllnad').innerHTML = h4;
+
+  // Raw tab
+  let hr = `<div class="tbl-wrap"><div class="tbl-cmd">SELECT * FROM dq_rapport_data; -- ${rows.length} rader</div><table><thead><tr><th>dq</th><th>kontroll</th><th>objekt</th><th>varde</th><th>status</th></tr></thead><tbody>`;
+  rows.forEach(r => {
+    const cls = r.status==='FEL'?' class="row-fail"':'';
+    const pill = r.status==='OK'?'pill-ok':r.status==='FEL'?'pill-fail':'pill-info';
+    hr += `<tr${cls}><td class="cell-dq">${r.dq}</td><td style="color:#64748b;font-size:12px">${r.kontroll}</td><td class="cell-mono">${r.objekt}</td><td class="cell-val">${r.varde}</td><td><span class="status-pill ${pill}">${r.status}</span></td></tr>`;
+  });
+  hr += '</tbody></table></div>';
+  document.getElementById('tab-raw').innerHTML = hr;
+}
+
+function showTab(id) {
+  ['summary','ifyllnad','raw'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===id?'block':'none';
+    document.querySelector(`[data-tab="${t}"]`).className = 'tab'+(t===id?' active':'');
+  });
+}
+
+// Input handling
+const input = document.getElementById('data-input');
+const statusBar = document.getElementById('status-bar');
+
+input.addEventListener('input', function() {
+  const val = this.value.trim();
+  if (!val) {
+    statusBar.className = 'status-bar';
+    render(parse(DEMO), 'demo');
+    return;
+  }
+  try {
+    const rows = parse(val);
+    if (rows.length < 3 || !rows[0].dq) throw new Error('För få rader');
+    render(rows, 'user');
+    statusBar.className = 'status-bar visible ok';
+    document.getElementById('status-icon').textContent = '✅';
+    document.getElementById('status-text').textContent = `${rows.length} rader inlästa — rapporten uppdaterad med era data`;
+  } catch(e) {
+    statusBar.className = 'status-bar visible err';
+    document.getElementById('status-icon').textContent = '❌';
+    document.getElementById('status-text').textContent = 'Kunde inte tolka data. Kontrollera formatet (tab-, semikolon- eller kommaseparerat).';
+  }
+});
+
+// Start with demo
+render(parse(DEMO), 'demo');
+</script>
+</body>
+</html>

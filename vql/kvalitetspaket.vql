@@ -1,0 +1,373 @@
+-- ============================================================
+-- KVALITETSPAKET (04_kvalitet/)
+--
+-- 7 VQL-vyer som kontrollerar datakvalitet.
+-- DQ0–DQ3 och DQ5–DQ6 returnerar rader ENBART vid FEL.
+-- 0 rader = allt OK.
+-- DQ4 returnerar alltid rader — den visar ifyllnadsgrad.
+--
+-- Kopiera allt nedan. Klistra in i Denodo. Kör.
+-- Ingen anpassning behövs — läser från era befintliga vyer.
+--
+-- Kör sedan:
+--   SELECT * FROM dq0_existens;
+--   SELECT * FROM dq1_null;
+--   SELECT * FROM dq2_doman;
+--   SELECT * FROM dq3_intervall;
+--   SELECT * FROM dq4_ifyllnadsgrad;
+--   SELECT * FROM dq5_korsvalidering;
+--   SELECT * FROM dq6_rimlighet;
+--
+-- Om DQ0–DQ3/DQ5–DQ6 returnerar rader: det är fel att åtgärda.
+-- DQ4 visar ifyllnadsgrad per fält — bra att ha koll på.
+-- ============================================================
+
+
+-- ──────────────────────────────────────────────
+-- DQ0: EXISTENS
+-- Kontrollerar att det finns data i basvyerna.
+-- Returnerar en rad per tom vy.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW dq0_existens AS
+SELECT 'src_genomford' AS vy, 'TOM — inga rader!' AS problem,
+       0 AS antal_rader
+FROM src_genomford
+HAVING COUNT(*) = 0
+UNION ALL
+SELECT 'src_vantande', 'TOM — inga rader!', 0
+FROM src_vantande
+HAVING COUNT(*) = 0;
+
+
+-- ──────────────────────────────────────────────
+-- DQ1: NULL-KONTROLL
+-- Kontrollerar att obligatoriska fält inte är NULL.
+-- Returnerar en rad per fält som har NULL-värden.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW dq1_null AS
+-- Genomförda
+SELECT 'src_genomford' AS vy, 'beslut_datum' AS falt,
+       COUNT(*) AS antal_null
+FROM src_genomford WHERE beslut_datum IS NULL
+HAVING COUNT(*) > 0
+UNION ALL
+SELECT 'src_genomford', 'start_datum', COUNT(*)
+FROM src_genomford WHERE start_datum IS NULL
+HAVING COUNT(*) > 0
+UNION ALL
+SELECT 'src_genomford', 'kva_kod', COUNT(*)
+FROM src_genomford WHERE kva_kod IS NULL
+HAVING COUNT(*) > 0
+UNION ALL
+SELECT 'src_genomford', 'mvo_kod', COUNT(*)
+FROM src_genomford WHERE mvo_kod IS NULL
+HAVING COUNT(*) > 0
+UNION ALL
+SELECT 'src_genomford', 'vardgaranti', COUNT(*)
+FROM src_genomford WHERE vardgaranti IS NULL
+HAVING COUNT(*) > 0
+UNION ALL
+SELECT 'src_genomford', 'regionkod', COUNT(*)
+FROM src_genomford WHERE regionkod IS NULL
+HAVING COUNT(*) > 0
+UNION ALL
+SELECT 'src_genomford', 'kon', COUNT(*)
+FROM src_genomford WHERE kon IS NULL
+HAVING COUNT(*) > 0
+UNION ALL
+SELECT 'src_genomford', 'fodelsear', COUNT(*)
+FROM src_genomford WHERE fodelsear IS NULL
+HAVING COUNT(*) > 0
+UNION ALL
+SELECT 'src_genomford', 'matperiod', COUNT(*)
+FROM src_genomford WHERE matperiod IS NULL
+HAVING COUNT(*) > 0
+UNION ALL
+-- Väntande (start_datum ska vara NULL, kontrolleras ej)
+SELECT 'src_vantande', 'beslut_datum', COUNT(*)
+FROM src_vantande WHERE beslut_datum IS NULL
+HAVING COUNT(*) > 0
+UNION ALL
+SELECT 'src_vantande', 'kva_kod', COUNT(*)
+FROM src_vantande WHERE kva_kod IS NULL
+HAVING COUNT(*) > 0
+UNION ALL
+SELECT 'src_vantande', 'mvo_kod', COUNT(*)
+FROM src_vantande WHERE mvo_kod IS NULL
+HAVING COUNT(*) > 0
+UNION ALL
+SELECT 'src_vantande', 'vardgaranti', COUNT(*)
+FROM src_vantande WHERE vardgaranti IS NULL
+HAVING COUNT(*) > 0
+UNION ALL
+SELECT 'src_vantande', 'regionkod', COUNT(*)
+FROM src_vantande WHERE regionkod IS NULL
+HAVING COUNT(*) > 0;
+
+
+-- ──────────────────────────────────────────────
+-- DQ2: DOMÄNKONTROLL
+-- Kontrollerar att värden tillhör rätt domän.
+-- Returnerar en rad per ogiltigt värde.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW dq2_doman AS
+-- KVÅ-kod ej i ref_kva_katarakt
+SELECT 'src_genomford' AS vy, 'kva_kod' AS falt,
+       g.kva_kod AS varde, 'Ej i ref_kva_katarakt' AS problem,
+       COUNT(*) AS antal
+FROM src_genomford g
+LEFT JOIN ref_kva_katarakt r ON g.kva_kod = r.kva_kod
+WHERE r.kva_kod IS NULL AND g.kva_kod IS NOT NULL
+GROUP BY g.kva_kod
+UNION ALL
+SELECT 'src_vantande', 'kva_kod', v.kva_kod, 'Ej i ref_kva_katarakt', COUNT(*)
+FROM src_vantande v
+LEFT JOIN ref_kva_katarakt r ON v.kva_kod = r.kva_kod
+WHERE r.kva_kod IS NULL AND v.kva_kod IS NOT NULL
+GROUP BY v.kva_kod
+UNION ALL
+-- Regionkod ≠ 51
+SELECT 'src_genomford', 'regionkod', regionkod, 'Ska vara 51', COUNT(*)
+FROM src_genomford WHERE regionkod <> '51'
+GROUP BY regionkod
+HAVING COUNT(*) > 0
+UNION ALL
+-- MVO ≠ 511
+SELECT 'src_genomford', 'mvo_kod', mvo_kod, 'Ska vara 511', COUNT(*)
+FROM src_genomford WHERE mvo_kod <> '511'
+GROUP BY mvo_kod
+HAVING COUNT(*) > 0
+UNION ALL
+-- Avvikelsekod okänd (tillåtna: NULL, 'PvV', 'MoV', 'SoV' eller '1','2','3')
+SELECT 'src_genomford', 'avvikelsekod', avvikelsekod, 'Okand avvikelsekod', COUNT(*)
+FROM src_genomford
+WHERE avvikelsekod IS NOT NULL
+  AND avvikelsekod NOT IN ('PvV','MoV','SoV','1','2','3')
+GROUP BY avvikelsekod
+HAVING COUNT(*) > 0
+UNION ALL
+-- Vardgaranti okänd
+SELECT 'src_genomford', 'vardgaranti', vardgaranti, 'Ska vara JA eller NEJ', COUNT(*)
+FROM src_genomford
+WHERE vardgaranti NOT IN ('JA','NEJ')
+GROUP BY vardgaranti
+HAVING COUNT(*) > 0
+UNION ALL
+-- Kön okänt
+SELECT 'src_genomford', 'kon', kon, 'Ska vara 1, 2 eller 3', COUNT(*)
+FROM src_genomford
+WHERE kon NOT IN ('1','2','3')
+GROUP BY kon
+HAVING COUNT(*) > 0;
+
+
+-- ──────────────────────────────────────────────
+-- DQ3: INTERVALLKONTROLL
+-- Kontrollerar att beräknade värden är rimliga.
+-- Returnerar en rad per orimligt värde.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW dq3_intervall AS
+-- Negativ väntetid
+SELECT 'calc_vantetid_genomford' AS vy,
+       'vantetid_dagar < 0' AS problem,
+       vardkontakt_id,
+       vantetid_dagar AS varde
+FROM calc_vantetid_genomford
+WHERE vantetid_dagar < 0
+UNION ALL
+-- Orimligt födelseår (< 1920 eller > aktuellt år minus 18)
+SELECT 'calc_vantetid_genomford', 'fodelsear orimligt', vardkontakt_id,
+       CAST(fodelsear AS DECIMAL(10,0))
+FROM calc_vantetid_genomford
+WHERE fodelsear < 1920 OR fodelsear > 2010
+UNION ALL
+-- Väntande med start_datum (ska vara NULL)
+SELECT 'src_vantande', 'start_datum ska vara NULL', vardkontakt_id, 0
+FROM src_vantande
+WHERE start_datum IS NOT NULL;
+
+
+-- ──────────────────────────────────────────────
+-- DQ4: IFYLLNADSGRAD
+-- Visar andel icke-NULL per fält.
+-- Returnerar ALLTID rader — detta är informativt,
+-- inte en felkontroll.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW dq4_ifyllnadsgrad AS
+SELECT
+  'src_genomford' AS vy,
+  COUNT(*) AS totalt,
+  CAST(CAST(COUNT(beslut_datum) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS beslut_datum_pct,
+  CAST(CAST(COUNT(start_datum) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS start_datum_pct,
+  CAST(CAST(COUNT(medicinskt_maldatum) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS med_maldatum_pct,
+  CAST(CAST(COUNT(kva_kod) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS kva_kod_pct,
+  CAST(CAST(COUNT(avvikelsekod) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS avvikelsekod_pct,
+  CAST(CAST(COUNT(lkf) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS lkf_pct,
+  CAST(CAST(COUNT(hsaid_listning) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS hsaid_listning_pct,
+  CAST(CAST(COUNT(remiss_datum) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS remiss_datum_pct,
+  CAST(CAST(COUNT(ankomst_datum) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS ankomst_datum_pct,
+  CAST(CAST(COUNT(remittent_hsaid) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS remittent_hsaid_pct
+FROM src_genomford
+UNION ALL
+SELECT
+  'src_vantande',
+  COUNT(*),
+  CAST(CAST(COUNT(beslut_datum) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)),
+  CAST(CAST(COUNT(start_datum) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)),
+  CAST(CAST(COUNT(medicinskt_maldatum) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)),
+  CAST(CAST(COUNT(kva_kod) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)),
+  CAST(CAST(COUNT(avvikelsekod) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)),
+  CAST(CAST(COUNT(lkf) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)),
+  CAST(CAST(COUNT(hsaid_listning) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)),
+  CAST(CAST(COUNT(remiss_datum) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)),
+  CAST(CAST(COUNT(ankomst_datum) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)),
+  CAST(CAST(COUNT(remittent_hsaid) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1))
+FROM src_vantande;
+
+
+-- ──────────────────────────────────────────────
+-- DQ5: KORSVALIDERING
+-- Kontrollerar att summor stämmer mellan lager.
+-- Returnerar en rad om det INTE stämmer.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW dq5_korsvalidering AS
+-- Antal i res_kpi_manad ska matcha calc_vantetid_genomford
+SELECT
+  'res_kpi_manad vs calc_vantetid_genomford' AS kontroll,
+  agg.total_kpi AS antal_i_res_kpi,
+  rak.total_calc AS antal_i_calc,
+  agg.total_kpi - rak.total_calc AS differens
+FROM
+  (SELECT SUM(antal_genomforda) AS total_kpi FROM res_kpi_manad) agg,
+  (SELECT COUNT(*) AS total_calc FROM calc_vantetid_genomford) rak
+WHERE agg.total_kpi <> rak.total_calc
+UNION ALL
+-- Summa intervallfördelning = antal genomförda
+SELECT
+  'intervallsumma vs antal_genomforda',
+  (n_0_30 + n_31_60 + n_61_90 + n_91_120 + n_121_180 + n_over_180),
+  antal_genomforda,
+  (n_0_30 + n_31_60 + n_61_90 + n_91_120 + n_121_180 + n_over_180) - antal_genomforda
+FROM res_kpi_manad
+WHERE (n_0_30 + n_31_60 + n_61_90 + n_91_120 + n_121_180 + n_over_180) <> antal_genomforda;
+
+
+-- ──────────────────────────────────────────────
+-- DQ6: RIMLIGHET
+-- Kontrollerar att KPI:er ligger inom rimliga intervall.
+-- Returnerar en rad per orimligt KPI.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW dq6_rimlighet AS
+-- Andel inom 90d utanför 50–100%
+SELECT 'andel_inom_90' AS kpi,
+       andel_inom_90 AS varde,
+       'Forvantad: 50-100%' AS forvantning
+FROM res_kpi_manad
+WHERE andel_inom_90 IS NOT NULL
+  AND (andel_inom_90 < 0.50 OR andel_inom_90 > 1.0)
+UNION ALL
+-- Medianväntetid utanför 1–365
+SELECT 'median_vantetid', CAST(median_vantetid AS DOUBLE), 'Forvantad: 1-365 dagar'
+FROM res_kpi_manad
+WHERE median_vantetid IS NOT NULL
+  AND (median_vantetid < 1 OR median_vantetid > 365)
+UNION ALL
+-- Noll genomförda
+SELECT 'antal_genomforda', CAST(antal_genomforda AS DOUBLE), 'Forvantad: > 0'
+FROM res_kpi_manad
+WHERE antal_genomforda = 0;
+
+
+-- ============================================================
+-- SÅ HÄR TOLKAR NI RESULTATEN:
+--
+-- DQ0: 0 rader = data finns i basvyerna ✅
+-- DQ1: 0 rader = inga NULL i obligatoriska fält ✅
+-- DQ2: 0 rader = alla värden tillhör rätt domän ✅
+-- DQ3: 0 rader = alla beräkningar rimliga ✅
+-- DQ4: Alltid rader — visar ifyllnadsgrad per fält (informativt)
+--      OBS: avvikelsekod har normalt låg ifyllnadsgrad
+--      (de flesta patienter har INGEN avvikelse = NULL)
+--      start_datum i src_vantande ska vara 0% (alltid NULL)
+-- DQ5: 0 rader = summor stämmer mellan lager ✅
+-- DQ6: 0 rader = KPI:er inom rimliga intervall ✅
+--
+-- Vid FEL: Titta på kolumnerna vy + falt + problem för
+-- att identifiera var problemet finns. Åtgärda i källdata
+-- eller i basvyn (01_basvy).
+-- ============================================================
+
+
+-- ============================================================
+-- BONUSVY: dq_rapport_data
+-- Samlar ALL DQ-information i EN körning.
+-- Kör: SELECT * FROM dq_rapport_data;
+-- Kopiera resultatet → klistra in i DQ-rapporten (JSX).
+-- ============================================================
+
+CREATE OR REPLACE VIEW dq_rapport_data AS
+
+-- DQ0: Existens (antal rader per basvy)
+          SELECT 'DQ0' AS dq, 'existens' AS kontroll,
+                 'src_genomford' AS objekt,
+                 CAST(COUNT(*) AS VARCHAR) AS varde,
+                 CASE WHEN COUNT(*) > 0 THEN 'OK' ELSE 'FEL' END AS status
+          FROM src_genomford
+UNION ALL SELECT 'DQ0', 'existens', 'src_vantande',
+                 CAST(COUNT(*) AS VARCHAR),
+                 CASE WHEN COUNT(*) > 0 THEN 'OK' ELSE 'FEL' END
+          FROM src_vantande
+
+-- DQ1: Null-kontroll (antal NULL per obligatoriskt fält)
+UNION ALL SELECT 'DQ1', 'null_genomford', 'beslut_datum', CAST(SUM(CASE WHEN beslut_datum IS NULL THEN 1 ELSE 0 END) AS VARCHAR), CASE WHEN SUM(CASE WHEN beslut_datum IS NULL THEN 1 ELSE 0 END)=0 THEN 'OK' ELSE 'FEL' END FROM src_genomford
+UNION ALL SELECT 'DQ1', 'null_genomford', 'start_datum', CAST(SUM(CASE WHEN start_datum IS NULL THEN 1 ELSE 0 END) AS VARCHAR), CASE WHEN SUM(CASE WHEN start_datum IS NULL THEN 1 ELSE 0 END)=0 THEN 'OK' ELSE 'FEL' END FROM src_genomford
+UNION ALL SELECT 'DQ1', 'null_genomford', 'kva_kod', CAST(SUM(CASE WHEN kva_kod IS NULL THEN 1 ELSE 0 END) AS VARCHAR), CASE WHEN SUM(CASE WHEN kva_kod IS NULL THEN 1 ELSE 0 END)=0 THEN 'OK' ELSE 'FEL' END FROM src_genomford
+UNION ALL SELECT 'DQ1', 'null_genomford', 'vardgaranti', CAST(SUM(CASE WHEN vardgaranti IS NULL THEN 1 ELSE 0 END) AS VARCHAR), CASE WHEN SUM(CASE WHEN vardgaranti IS NULL THEN 1 ELSE 0 END)=0 THEN 'OK' ELSE 'FEL' END FROM src_genomford
+UNION ALL SELECT 'DQ1', 'null_genomford', 'kon', CAST(SUM(CASE WHEN kon IS NULL THEN 1 ELSE 0 END) AS VARCHAR), CASE WHEN SUM(CASE WHEN kon IS NULL THEN 1 ELSE 0 END)=0 THEN 'OK' ELSE 'FEL' END FROM src_genomford
+UNION ALL SELECT 'DQ1', 'null_genomford', 'fodelsear', CAST(SUM(CASE WHEN fodelsear IS NULL THEN 1 ELSE 0 END) AS VARCHAR), CASE WHEN SUM(CASE WHEN fodelsear IS NULL THEN 1 ELSE 0 END)=0 THEN 'OK' ELSE 'FEL' END FROM src_genomford
+UNION ALL SELECT 'DQ1', 'null_vantande', 'beslut_datum', CAST(SUM(CASE WHEN beslut_datum IS NULL THEN 1 ELSE 0 END) AS VARCHAR), CASE WHEN SUM(CASE WHEN beslut_datum IS NULL THEN 1 ELSE 0 END)=0 THEN 'OK' ELSE 'FEL' END FROM src_vantande
+UNION ALL SELECT 'DQ1', 'null_vantande', 'kva_kod', CAST(SUM(CASE WHEN kva_kod IS NULL THEN 1 ELSE 0 END) AS VARCHAR), CASE WHEN SUM(CASE WHEN kva_kod IS NULL THEN 1 ELSE 0 END)=0 THEN 'OK' ELSE 'FEL' END FROM src_vantande
+
+-- DQ2: Domänkontroll (antal ogiltiga per fält)
+UNION ALL SELECT 'DQ2', 'doman', 'kva_ej_i_ref', CAST(COUNT(*) AS VARCHAR), CASE WHEN COUNT(*)=0 THEN 'OK' ELSE 'FEL' END FROM src_genomford g LEFT JOIN ref_kva_katarakt r ON g.kva_kod=r.kva_kod WHERE r.kva_kod IS NULL AND g.kva_kod IS NOT NULL
+UNION ALL SELECT 'DQ2', 'doman', 'regionkod_ej_51', CAST(SUM(CASE WHEN regionkod<>'51' THEN 1 ELSE 0 END) AS VARCHAR), CASE WHEN SUM(CASE WHEN regionkod<>'51' THEN 1 ELSE 0 END)=0 THEN 'OK' ELSE 'FEL' END FROM src_genomford
+UNION ALL SELECT 'DQ2', 'doman', 'mvo_ej_511', CAST(SUM(CASE WHEN mvo_kod<>'511' THEN 1 ELSE 0 END) AS VARCHAR), CASE WHEN SUM(CASE WHEN mvo_kod<>'511' THEN 1 ELSE 0 END)=0 THEN 'OK' ELSE 'FEL' END FROM src_genomford
+
+-- DQ3: Intervallkontroll
+UNION ALL SELECT 'DQ3', 'intervall', 'negativ_vantetid', CAST(SUM(CASE WHEN vantetid_dagar<0 THEN 1 ELSE 0 END) AS VARCHAR), CASE WHEN SUM(CASE WHEN vantetid_dagar<0 THEN 1 ELSE 0 END)=0 THEN 'OK' ELSE 'FEL' END FROM calc_vantetid_genomford
+UNION ALL SELECT 'DQ3', 'intervall', 'orimligt_fodelsear', CAST(SUM(CASE WHEN fodelsear<1920 OR fodelsear>2010 THEN 1 ELSE 0 END) AS VARCHAR), CASE WHEN SUM(CASE WHEN fodelsear<1920 OR fodelsear>2010 THEN 1 ELSE 0 END)=0 THEN 'OK' ELSE 'FEL' END FROM calc_vantetid_genomford
+UNION ALL SELECT 'DQ3', 'intervall', 'vantande_med_start', CAST(SUM(CASE WHEN start_datum IS NOT NULL THEN 1 ELSE 0 END) AS VARCHAR), CASE WHEN SUM(CASE WHEN start_datum IS NOT NULL THEN 1 ELSE 0 END)=0 THEN 'OK' ELSE 'FEL' END FROM src_vantande
+
+-- DQ4: Ifyllnadsgrad (alltid data — procent)
+UNION ALL SELECT 'DQ4', 'ifyllnad_genomford', 'beslut_datum', CAST(CAST(CAST(COUNT(beslut_datum) AS DOUBLE)/COUNT(*)*100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO' FROM src_genomford
+UNION ALL SELECT 'DQ4', 'ifyllnad_genomford', 'medicinskt_maldatum', CAST(CAST(CAST(COUNT(medicinskt_maldatum) AS DOUBLE)/COUNT(*)*100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO' FROM src_genomford
+UNION ALL SELECT 'DQ4', 'ifyllnad_genomford', 'avvikelsekod', CAST(CAST(CAST(COUNT(avvikelsekod) AS DOUBLE)/COUNT(*)*100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO' FROM src_genomford
+UNION ALL SELECT 'DQ4', 'ifyllnad_genomford', 'lkf', CAST(CAST(CAST(COUNT(lkf) AS DOUBLE)/COUNT(*)*100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO' FROM src_genomford
+UNION ALL SELECT 'DQ4', 'ifyllnad_genomford', 'hsaid_listning', CAST(CAST(CAST(COUNT(hsaid_listning) AS DOUBLE)/COUNT(*)*100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO' FROM src_genomford
+UNION ALL SELECT 'DQ4', 'ifyllnad_genomford', 'remiss_datum', CAST(CAST(CAST(COUNT(remiss_datum) AS DOUBLE)/COUNT(*)*100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO' FROM src_genomford
+UNION ALL SELECT 'DQ4', 'ifyllnad_genomford', 'remittent_hsaid', CAST(CAST(CAST(COUNT(remittent_hsaid) AS DOUBLE)/COUNT(*)*100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO' FROM src_genomford
+UNION ALL SELECT 'DQ4', 'ifyllnad_vantande', 'beslut_datum', CAST(CAST(CAST(COUNT(beslut_datum) AS DOUBLE)/COUNT(*)*100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO' FROM src_vantande
+UNION ALL SELECT 'DQ4', 'ifyllnad_vantande', 'medicinskt_maldatum', CAST(CAST(CAST(COUNT(medicinskt_maldatum) AS DOUBLE)/COUNT(*)*100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO' FROM src_vantande
+UNION ALL SELECT 'DQ4', 'ifyllnad_vantande', 'remiss_datum', CAST(CAST(CAST(COUNT(remiss_datum) AS DOUBLE)/COUNT(*)*100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO' FROM src_vantande
+
+-- DQ5: Korsvalidering
+UNION ALL SELECT 'DQ5', 'korsvalidering', 'res_vs_calc',
+  CAST((SELECT SUM(antal_genomforda) FROM res_kpi_manad) - (SELECT COUNT(*) FROM calc_vantetid_genomford) AS VARCHAR),
+  CASE WHEN (SELECT SUM(antal_genomforda) FROM res_kpi_manad) = (SELECT COUNT(*) FROM calc_vantetid_genomford) THEN 'OK' ELSE 'FEL' END
+
+-- DQ6: Rimlighet
+UNION ALL SELECT 'DQ6', 'rimlighet', 'andel_inom_90',
+  CAST(CAST(andel_inom_90*100 AS DECIMAL(5,1)) AS VARCHAR),
+  CASE WHEN andel_inom_90 >= 0.50 AND andel_inom_90 <= 1.0 THEN 'OK' ELSE 'FEL' END
+FROM res_kpi_manad WHERE andel_inom_90 IS NOT NULL
+UNION ALL SELECT 'DQ6', 'rimlighet', 'median_vantetid',
+  CAST(median_vantetid AS VARCHAR),
+  CASE WHEN median_vantetid >= 1 AND median_vantetid <= 365 THEN 'OK' ELSE 'FEL' END
+FROM res_kpi_manad WHERE median_vantetid IS NOT NULL;

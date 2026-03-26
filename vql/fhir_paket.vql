@@ -1,0 +1,471 @@
+-- ============================================================
+-- FHIR-PAKET v3 (05_fhir/) — KOMPLETT, ALLA 16 KPI:er × ALLA DIMENSIONER
+--
+-- Skapade vyer:
+--   ref_fhir_system         Alla system-URI:er (bytbara)
+--   fhir_measure_report     Alla nyckeltal → MeasureReport-rader
+--
+-- Beroenden:
+--   res_kpi_manad, res_kpi_per_yrke, res_kpi_per_kontaktform,
+--   res_kpi_per_bokning, res_kpi_per_remittent, res_kpi_per_kommun
+--
+-- DESIGNBESLUT (se fhir_mappning_analys.md):
+--   D1-D5: Measure-resurser, stratifiers, reporter, URI:er
+--   D6: Per-dimensioner som stratifiers — alla 5 mått per dimension
+--   D7: Medelväntetid som extra group
+--   D8: Remiss→beslut som extra group
+-- ============================================================
+
+
+CREATE OR REPLACE VIEW ref_fhir_system AS
+SELECT
+  'urn:oid:1.2.752.116.1.3.2.3.6'                        AS system_kva,
+  'urn:oid:1.2.752.116.1.1.1'                            AS system_icd10se,
+  'https://kchd.se/fhir/CodeSystem/skr-aktivitetskod'    AS system_skr_aktivitet,
+  'https://kchd.se/fhir/CodeSystem/sjukhuskod'           AS system_sjukhuskod,
+  'urn:oid:1.2.752.129.2.1.4.1'                          AS system_hsaid,
+  'https://kchd.se/fhir/Measure/vantetid-vardgaranti'    AS measure_url_vardgaranti,
+  'https://kchd.se/fhir/Measure/vantetid-median'         AS measure_url_median,
+  'https://kchd.se/fhir/Measure/vantetid-patientresa'    AS measure_url_patientresa;
+
+
+CREATE OR REPLACE VIEW fhir_measure_report AS
+-- KPI 1-4: Andel inom 90d
+SELECT
+  sys.measure_url_vardgaranti AS measure_url, 'vardgaranti' AS measure_type,
+  'proportion' AS scoring, 'complete' AS status, 'summary' AS report_type,
+  'andel_inom_90' AS group_code,
+  CONCAT(CAST(k.ar AS VARCHAR),'-',LPAD(CAST(k.manad AS VARCHAR),2,'0'),'-01') AS period_start, CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(k.ar AS VARCHAR),'-',LPAD(CAST(k.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR) AS period_end,
+  sys.system_hsaid AS reporter_system, k.hsaid_vardenhet AS reporter_value, k.sjukhusnamn AS reporter_display,
+  sys.system_hsaid AS subject_system, k.hsaid_region AS subject_value,
+  k.andel_inom_90 AS measure_score, '%' AS measure_score_unit,
+  k.antal_genomforda AS pop_initial, k.namnare_vg AS pop_denominator, k.taljare_vg AS pop_numerator,
+  k.antal_man AS strat_kon_man, k.antal_kvinna AS strat_kon_kvinna,
+  k.n_age_under_50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
+  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85_plus AS strat_age_85_plus,
+  k.n_0_30 AS strat_vt_0_30, k.n_31_60 AS strat_vt_31_60, k.n_61_90 AS strat_vt_61_90,
+  k.n_91_120 AS strat_vt_91_120, k.n_121_180 AS strat_vt_121_180, k.n_over_180 AS strat_vt_over_180,
+  CAST(NULL AS VARCHAR) AS dimension_type, CAST(NULL AS VARCHAR) AS dimension_value, CAST(NULL AS VARCHAR) AS dimension_display
+FROM res_kpi_manad k CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- KPI 5: Median
+SELECT
+  sys.measure_url_median AS measure_url, 'vantetid' AS measure_type,
+  'continuous-variable' AS scoring, 'complete' AS status, 'summary' AS report_type,
+  'median_vantetid' AS group_code,
+  CONCAT(CAST(k.ar AS VARCHAR),'-',LPAD(CAST(k.manad AS VARCHAR),2,'0'),'-01') AS period_start, CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(k.ar AS VARCHAR),'-',LPAD(CAST(k.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR) AS period_end,
+  sys.system_hsaid AS reporter_system, k.hsaid_vardenhet AS reporter_value, k.sjukhusnamn AS reporter_display,
+  sys.system_hsaid AS subject_system, k.hsaid_region AS subject_value,
+  CAST(k.median_vantetid AS DOUBLE) AS measure_score, 'dagar' AS measure_score_unit,
+  k.antal_genomforda AS pop_initial, NULL AS pop_denominator, NULL AS pop_numerator,
+  k.antal_man AS strat_kon_man, k.antal_kvinna AS strat_kon_kvinna,
+  k.n_age_under_50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
+  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85_plus AS strat_age_85_plus,
+  k.n_0_30 AS strat_vt_0_30, k.n_31_60 AS strat_vt_31_60, k.n_61_90 AS strat_vt_61_90,
+  k.n_91_120 AS strat_vt_91_120, k.n_121_180 AS strat_vt_121_180, k.n_over_180 AS strat_vt_over_180,
+  CAST(NULL AS VARCHAR) AS dimension_type, CAST(NULL AS VARCHAR) AS dimension_value, CAST(NULL AS VARCHAR) AS dimension_display
+FROM res_kpi_manad k CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- KPI 10: Medel (D7)
+SELECT
+  sys.measure_url_median AS measure_url, 'vantetid' AS measure_type,
+  'continuous-variable' AS scoring, 'complete' AS status, 'summary' AS report_type,
+  'medel_vantetid' AS group_code,
+  CONCAT(CAST(k.ar AS VARCHAR),'-',LPAD(CAST(k.manad AS VARCHAR),2,'0'),'-01') AS period_start, CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(k.ar AS VARCHAR),'-',LPAD(CAST(k.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR) AS period_end,
+  sys.system_hsaid AS reporter_system, k.hsaid_vardenhet AS reporter_value, k.sjukhusnamn AS reporter_display,
+  sys.system_hsaid AS subject_system, k.hsaid_region AS subject_value,
+  CAST(k.medel_vantetid AS DOUBLE) AS measure_score, 'dagar' AS measure_score_unit,
+  k.antal_genomforda AS pop_initial, NULL AS pop_denominator, NULL AS pop_numerator,
+  k.antal_man AS strat_kon_man, k.antal_kvinna AS strat_kon_kvinna,
+  k.n_age_under_50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
+  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85_plus AS strat_age_85_plus,
+  k.n_0_30 AS strat_vt_0_30, k.n_31_60 AS strat_vt_31_60, k.n_61_90 AS strat_vt_61_90,
+  k.n_91_120 AS strat_vt_91_120, k.n_121_180 AS strat_vt_121_180, k.n_over_180 AS strat_vt_over_180,
+  CAST(NULL AS VARCHAR) AS dimension_type, CAST(NULL AS VARCHAR) AS dimension_value, CAST(NULL AS VARCHAR) AS dimension_display
+FROM res_kpi_manad k CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- KPI 6: Patientresa
+SELECT
+  sys.measure_url_patientresa AS measure_url, 'patientresa' AS measure_type,
+  'continuous-variable' AS scoring, 'complete' AS status, 'summary' AS report_type,
+  'median_patientresa' AS group_code,
+  CONCAT(CAST(k.ar AS VARCHAR),'-',LPAD(CAST(k.manad AS VARCHAR),2,'0'),'-01') AS period_start, CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(k.ar AS VARCHAR),'-',LPAD(CAST(k.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR) AS period_end,
+  sys.system_hsaid AS reporter_system, k.hsaid_vardenhet AS reporter_value, k.sjukhusnamn AS reporter_display,
+  sys.system_hsaid AS subject_system, k.hsaid_region AS subject_value,
+  CAST(k.median_total_patientresa AS DOUBLE) AS measure_score, 'dagar' AS measure_score_unit,
+  k.antal_genomforda AS pop_initial, NULL AS pop_denominator, NULL AS pop_numerator,
+  k.antal_man AS strat_kon_man, k.antal_kvinna AS strat_kon_kvinna,
+  k.n_age_under_50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
+  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85_plus AS strat_age_85_plus,
+  k.n_0_30 AS strat_vt_0_30, k.n_31_60 AS strat_vt_31_60, k.n_61_90 AS strat_vt_61_90,
+  k.n_91_120 AS strat_vt_91_120, k.n_121_180 AS strat_vt_121_180, k.n_over_180 AS strat_vt_over_180,
+  CAST(NULL AS VARCHAR) AS dimension_type, CAST(NULL AS VARCHAR) AS dimension_value, CAST(NULL AS VARCHAR) AS dimension_display
+FROM res_kpi_manad k CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- KPI 16: Remiss→beslut (D8)
+SELECT
+  sys.measure_url_patientresa AS measure_url, 'patientresa' AS measure_type,
+  'continuous-variable' AS scoring, 'complete' AS status, 'summary' AS report_type,
+  'median_remiss_beslut' AS group_code,
+  CONCAT(CAST(k.ar AS VARCHAR),'-',LPAD(CAST(k.manad AS VARCHAR),2,'0'),'-01') AS period_start, CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(k.ar AS VARCHAR),'-',LPAD(CAST(k.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR) AS period_end,
+  sys.system_hsaid AS reporter_system, k.hsaid_vardenhet AS reporter_value, k.sjukhusnamn AS reporter_display,
+  sys.system_hsaid AS subject_system, k.hsaid_region AS subject_value,
+  CAST(k.median_remiss_till_beslut AS DOUBLE) AS measure_score, 'dagar' AS measure_score_unit,
+  k.antal_genomforda AS pop_initial, NULL AS pop_denominator, NULL AS pop_numerator,
+  k.antal_man AS strat_kon_man, k.antal_kvinna AS strat_kon_kvinna,
+  k.n_age_under_50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
+  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85_plus AS strat_age_85_plus,
+  k.n_0_30 AS strat_vt_0_30, k.n_31_60 AS strat_vt_31_60, k.n_61_90 AS strat_vt_61_90,
+  k.n_91_120 AS strat_vt_91_120, k.n_121_180 AS strat_vt_121_180, k.n_over_180 AS strat_vt_over_180,
+  CAST(NULL AS VARCHAR) AS dimension_type, CAST(NULL AS VARCHAR) AS dimension_value, CAST(NULL AS VARCHAR) AS dimension_display
+FROM res_kpi_manad k CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per yrkeskategori: andel_inom_90
+SELECT
+  sys.measure_url_vardgaranti, 'vardgaranti', 'proportion', 'complete', 'summary', 'andel_inom_90',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  d.andel_inom_90, '%', d.antal_genomforda, d.namnare_vg, d.taljare_vg,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'yrkeskategori', d.yrkeskategori, d.yrkeskategori
+FROM res_kpi_per_yrke d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per yrkeskategori: median_vantetid
+SELECT
+  sys.measure_url_median, 'vantetid', 'continuous-variable', 'complete', 'summary', 'median_vantetid',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_vantetid AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'yrkeskategori', d.yrkeskategori, d.yrkeskategori
+FROM res_kpi_per_yrke d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per yrkeskategori: medel_vantetid
+SELECT
+  sys.measure_url_median, 'vantetid', 'continuous-variable', 'complete', 'summary', 'medel_vantetid',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.medel_vantetid AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'yrkeskategori', d.yrkeskategori, d.yrkeskategori
+FROM res_kpi_per_yrke d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per yrkeskategori: median_patientresa
+SELECT
+  sys.measure_url_patientresa, 'patientresa', 'continuous-variable', 'complete', 'summary', 'median_patientresa',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_total_patientresa AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'yrkeskategori', d.yrkeskategori, d.yrkeskategori
+FROM res_kpi_per_yrke d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per yrkeskategori: median_remiss_beslut
+SELECT
+  sys.measure_url_patientresa, 'patientresa', 'continuous-variable', 'complete', 'summary', 'median_remiss_beslut',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_remiss_till_beslut AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'yrkeskategori', d.yrkeskategori, d.yrkeskategori
+FROM res_kpi_per_yrke d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per kontaktform: andel_inom_90
+SELECT
+  sys.measure_url_vardgaranti, 'vardgaranti', 'proportion', 'complete', 'summary', 'andel_inom_90',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  d.andel_inom_90, '%', d.antal_genomforda, d.namnare_vg, d.taljare_vg,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'kontaktform', d.kontaktform, d.kontaktform
+FROM res_kpi_per_kontaktform d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per kontaktform: median_vantetid
+SELECT
+  sys.measure_url_median, 'vantetid', 'continuous-variable', 'complete', 'summary', 'median_vantetid',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_vantetid AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'kontaktform', d.kontaktform, d.kontaktform
+FROM res_kpi_per_kontaktform d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per kontaktform: medel_vantetid
+SELECT
+  sys.measure_url_median, 'vantetid', 'continuous-variable', 'complete', 'summary', 'medel_vantetid',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.medel_vantetid AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'kontaktform', d.kontaktform, d.kontaktform
+FROM res_kpi_per_kontaktform d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per kontaktform: median_patientresa
+SELECT
+  sys.measure_url_patientresa, 'patientresa', 'continuous-variable', 'complete', 'summary', 'median_patientresa',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_total_patientresa AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'kontaktform', d.kontaktform, d.kontaktform
+FROM res_kpi_per_kontaktform d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per kontaktform: median_remiss_beslut
+SELECT
+  sys.measure_url_patientresa, 'patientresa', 'continuous-variable', 'complete', 'summary', 'median_remiss_beslut',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_remiss_till_beslut AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'kontaktform', d.kontaktform, d.kontaktform
+FROM res_kpi_per_kontaktform d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per bokningssatt: andel_inom_90
+SELECT
+  sys.measure_url_vardgaranti, 'vardgaranti', 'proportion', 'complete', 'summary', 'andel_inom_90',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  d.andel_inom_90, '%', d.antal_genomforda, d.namnare_vg, d.taljare_vg,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'bokningssatt', d.bokningssatt, d.bokningssatt
+FROM res_kpi_per_bokning d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per bokningssatt: median_vantetid
+SELECT
+  sys.measure_url_median, 'vantetid', 'continuous-variable', 'complete', 'summary', 'median_vantetid',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_vantetid AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'bokningssatt', d.bokningssatt, d.bokningssatt
+FROM res_kpi_per_bokning d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per bokningssatt: medel_vantetid
+SELECT
+  sys.measure_url_median, 'vantetid', 'continuous-variable', 'complete', 'summary', 'medel_vantetid',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.medel_vantetid AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'bokningssatt', d.bokningssatt, d.bokningssatt
+FROM res_kpi_per_bokning d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per bokningssatt: median_patientresa
+SELECT
+  sys.measure_url_patientresa, 'patientresa', 'continuous-variable', 'complete', 'summary', 'median_patientresa',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_total_patientresa AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'bokningssatt', d.bokningssatt, d.bokningssatt
+FROM res_kpi_per_bokning d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per bokningssatt: median_remiss_beslut
+SELECT
+  sys.measure_url_patientresa, 'patientresa', 'continuous-variable', 'complete', 'summary', 'median_remiss_beslut',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_remiss_till_beslut AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'bokningssatt', d.bokningssatt, d.bokningssatt
+FROM res_kpi_per_bokning d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per remittent: andel_inom_90
+SELECT
+  sys.measure_url_vardgaranti, 'vardgaranti', 'proportion', 'complete', 'summary', 'andel_inom_90',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  d.andel_inom_90, '%', d.antal_genomforda, d.namnare_vg, d.taljare_vg,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'remittent', d.remittent_hsaid, d.remittent_hsaid
+FROM res_kpi_per_remittent d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per remittent: median_vantetid
+SELECT
+  sys.measure_url_median, 'vantetid', 'continuous-variable', 'complete', 'summary', 'median_vantetid',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_vantetid AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'remittent', d.remittent_hsaid, d.remittent_hsaid
+FROM res_kpi_per_remittent d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per remittent: medel_vantetid
+SELECT
+  sys.measure_url_median, 'vantetid', 'continuous-variable', 'complete', 'summary', 'medel_vantetid',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.medel_vantetid AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'remittent', d.remittent_hsaid, d.remittent_hsaid
+FROM res_kpi_per_remittent d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per remittent: median_patientresa
+SELECT
+  sys.measure_url_patientresa, 'patientresa', 'continuous-variable', 'complete', 'summary', 'median_patientresa',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_total_patientresa AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'remittent', d.remittent_hsaid, d.remittent_hsaid
+FROM res_kpi_per_remittent d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per remittent: median_remiss_beslut
+SELECT
+  sys.measure_url_patientresa, 'patientresa', 'continuous-variable', 'complete', 'summary', 'median_remiss_beslut',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_remiss_till_beslut AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'remittent', d.remittent_hsaid, d.remittent_hsaid
+FROM res_kpi_per_remittent d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per kommun: andel_inom_90
+SELECT
+  sys.measure_url_vardgaranti, 'vardgaranti', 'proportion', 'complete', 'summary', 'andel_inom_90',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  d.andel_inom_90, '%', d.antal_genomforda, d.namnare_vg, d.taljare_vg,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'kommun', d.lkf, d.lkf
+FROM res_kpi_per_kommun d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per kommun: median_vantetid
+SELECT
+  sys.measure_url_median, 'vantetid', 'continuous-variable', 'complete', 'summary', 'median_vantetid',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_vantetid AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'kommun', d.lkf, d.lkf
+FROM res_kpi_per_kommun d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per kommun: medel_vantetid
+SELECT
+  sys.measure_url_median, 'vantetid', 'continuous-variable', 'complete', 'summary', 'medel_vantetid',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.medel_vantetid AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'kommun', d.lkf, d.lkf
+FROM res_kpi_per_kommun d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per kommun: median_patientresa
+SELECT
+  sys.measure_url_patientresa, 'patientresa', 'continuous-variable', 'complete', 'summary', 'median_patientresa',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_total_patientresa AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'kommun', d.lkf, d.lkf
+FROM res_kpi_per_kommun d CROSS JOIN ref_fhir_system sys
+UNION ALL
+-- Per kommun: median_remiss_beslut
+SELECT
+  sys.measure_url_patientresa, 'patientresa', 'continuous-variable', 'complete', 'summary', 'median_remiss_beslut',
+  CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01'), CAST(LASTDAYOFMONTH(CAST(CONCAT(CAST(d.ar AS VARCHAR),'-',LPAD(CAST(d.manad AS VARCHAR),2,'0'),'-01') AS DATE)) AS VARCHAR),
+  sys.system_hsaid, d.hsaid_vardenhet, d.sjukhusnamn, sys.system_hsaid, d.hsaid_region,
+  CAST(d.median_remiss_till_beslut AS DOUBLE), 'dagar', d.antal_genomforda, NULL, NULL,
+  NULL AS strat_kon_man, NULL AS strat_kon_kvinna,
+  NULL AS strat_age_under_50, NULL AS strat_age_50_64,
+  NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
+  NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
+  NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
+  'kommun', d.lkf, d.lkf
+FROM res_kpi_per_kommun d CROSS JOIN ref_fhir_system sys;
