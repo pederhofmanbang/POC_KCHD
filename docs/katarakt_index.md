@@ -21,7 +21,7 @@
 | 3 | fhir_serializer.py | Python-referensimplementation — läser TSV, producerar FHIR Bundle JSON | ✅ Klar | Ej skickat |
 | 3 | fhir_serializer_spec.md | C#-projektspec: kolumner, pseudokod, NuGet, SSIS-integration, testning | ✅ Klar | Ej skickat |
 | 3 | fhir_bundle_example.json | Referens-JSON: 12 MeasureReports, 214 KB, validerad | ✅ Klar | Ej skickat |
-| 3 | KchdFhirSerializer/ (C#) | KCHD bygger — ej påbörjat, Python-referens finns | 📋 Ej byggt | — |
+| 3 | KchdFhirSerializer/ (C#) | 6 filer skapade (.NET 8, Hl7.Fhir.R4). EJ kompilerat, EJ testat — kräver dotnet build lokalt | ⚠️ Ej verifierat | I repo |
 | 4 | fhir_radniva.vql + C# | Procedure/ServiceRequest + SSIS | 📋 Ej påbörjat | — |
 
 ## 2. DEMO-ARTEFAKTER (visa VGR/styrgrupp)
@@ -218,3 +218,48 @@ Exakt samma steg som VGR kör — enda skillnaden är att VGR byter testdata mot
 | 8 | Skicka till hubb | FHIR Bundle | Kvittens: 200 OK | REST API POST |
 
 **OBS:** Steg 7 körs i pipeline_runner.py av fhir_serializer.py (Python). I produktion ska detta göras av C#/SSIS — den koden är ännu inte byggd (se §1, rad "KchdFhirSerializer"). KCHD bygger den.
+
+---
+
+## 12. GITHUB-SYNK (POC_KCHD)
+
+**Repo:** https://github.com/pederhofmanbang/POC_KCHD
+**Senaste push:** 2026-03-26 (initial + C#-serialiserare)
+
+Rutin: säg "paketera för GitHub" → jag ger dig en ny tar.gz med ändrade filer → du laddar upp via github.com → Add file → Upload files.
+
+| Fil i repo | Senast ändrad | I repot? |
+|-----------|---------------|----------|
+| README.md | 2026-03-26 | ✅ |
+| .gitignore | 2026-03-26 | ✅ |
+| vql/komplettering_detaljvyer.vql | 2026-03-26 | ✅ |
+| vql/verifieringspaket.vql | 2026-03-26 | ✅ |
+| vql/kvalitetspaket.vql | 2026-03-26 | ✅ |
+| vql/fhir_paket.vql | 2026-03-26 | ✅ |
+| python/pipeline_runner.py | 2026-03-26 | ✅ |
+| python/fhir_serializer.py | 2026-03-26 | ✅ |
+| python/test_dq.py | 2026-03-26 | ✅ |
+| python/test_fhir.py | 2026-03-26 | ✅ |
+| python/build_dq_rapport.py | 2026-03-26 | ✅ |
+| docs/katarakt_index.md | 2026-03-26 | ✅ |
+| docs/fhir_mappning_analys.md | 2026-03-26 | ✅ |
+| docs/fhir_mappningsregister.md | 2026-03-26 | ✅ |
+| docs/fhir_serializer_spec.md | 2026-03-26 | ✅ |
+| docs/prompt_fhir_mappning.md | 2026-03-26 | ✅ |
+| docs/dq_rapport.html | 2026-03-26 | ✅ |
+| docs/fhir_bundle_example.json | 2026-03-26 | ✅ |
+| docs/CLAUDE_CODE_PROMPT_CSHARP.md | 2026-03-26 | ✅ |
+| demo/vantetid_katarakt_guide.jsx | 2026-03-26 | ✅ |
+| demo/testresultat_komplett.jsx | 2026-03-26 | ✅ |
+| demo/vgr_presentation.jsx | 2026-03-26 | ✅ |
+| demo/verifiering_demo.jsx | 2026-03-26 | ✅ |
+| demo/katarakt_dashboard.jsx | 2026-03-26 | ✅ |
+| demo/plan_katarakt_fas2.jsx | 2026-03-26 | ✅ |
+| demo/repo_struktur_intern.jsx | 2026-03-26 | ✅ |
+| testdata/katarakt_testdata_100__1__VGR.csv | 2026-03-26 | ✅ |
+| csharp/KchdFhirSerializer/KchdFhirSerializer.csproj | 2026-03-26 | ✅ |
+| csharp/KchdFhirSerializer/Program.cs | 2026-03-26 | ✅ |
+| csharp/KchdFhirSerializer/TsvReader.cs | 2026-03-26 | ✅ |
+| csharp/KchdFhirSerializer/MeasureReportBuilder.cs | 2026-03-26 | ✅ |
+| csharp/KchdFhirSerializer/FhirValidator.cs | 2026-03-26 | ✅ |
+| csharp/KchdFhirSerializer/appsettings.json | 2026-03-26 | ✅ |
