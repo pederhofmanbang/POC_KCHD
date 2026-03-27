@@ -1,0 +1,85 @@
+matperiod	sjukhuskod	sjukhusnamn	dimension	dimension_varde	antal	andel_inom_90	median_vantetid	medel_vantetid	median_patientresa	median_remiss_beslut
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	yrkeskategori	XS915	19	85.7	61	54.6	77	39
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	kontaktform	0	18	85.7	61.5	55.4	77	39
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	kontaktform	91	1	None	41	41	None	None
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	bokningssatt	2	5	100.0	41	40.2	60.5	29.0
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	bokningssatt	3	8	75.0	65.5	75.2	104.0	38.0
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	bokningssatt	4	6	100.0	34.5	39.2	66	39
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	remittent	SE0000000000-OPT001	3	100.0	63	52.7	77	42
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	remittent	SE0000000000-OPT002	4	100.0	36.0	36	64.5	28.5
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	remittent	SE0000000000-OPT003	4	100.0	45.0	44.2	78.0	36.5
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	remittent	SE0000000000-OPT004	4	66.7	47.5	65.2	91.0	39.5
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	kommun	1481	2	None	15.5	15.5	59.0	43.5
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	kommun	1484	1	100.0	27	27	69	42
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	kommun	1485	1	100.0	49	49	88	39
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	kommun	1488	3	66.7	84	81	123	55
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	kommun	1490	5	100.0	65	60.8	88.0	24.5
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	kommun	1491	2	50.0	93.5	93.5	116.0	22.5
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	kommun	1492	1	None	22	22	68	46
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	kommun	1493	1	100.0	63	63	77	14
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	kommun	1494	1	None	10	10	26	16
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	kommun	1495	1	None	41	41	None	None
+2026-02-28	501010	Sahlgrenska Universitetssjukhuset	kommun	1499	1	100.0	61	61	109	48
+2026-02-28	501040	Skaraborgs Sjukhus	yrkeskategori	XS915	13	100.0	58	61.8	87	35
+2026-02-28	501040	Skaraborgs Sjukhus	kontaktform	0	13	100.0	58	61.8	87	35
+2026-02-28	501040	Skaraborgs Sjukhus	bokningssatt	2	3	100.0	66	59	99.0	33.0
+2026-02-28	501040	Skaraborgs Sjukhus	bokningssatt	3	7	100.0	58	64.7	87	38
+2026-02-28	501040	Skaraborgs Sjukhus	bokningssatt	4	3	100.0	57	57.7	76.5	18.5
+2026-02-28	501040	Skaraborgs Sjukhus	remittent	SE0000000000-OPT001	1	100.0	38	38	64	26
+2026-02-28	501040	Skaraborgs Sjukhus	remittent	SE0000000000-OPT002	2	100.0	72.0	72	82.5	10.5
+2026-02-28	501040	Skaraborgs Sjukhus	remittent	SE0000000000-OPT003	2	100.0	69.5	69.5	122.0	52.5
+2026-02-28	501040	Skaraborgs Sjukhus	remittent	SE0000000000-OPT004	4	100.0	48.0	53.5	86.0	36.5
+2026-02-28	501040	Skaraborgs Sjukhus	kommun	1482	1	100.0	66	66	122	56
+2026-02-28	501040	Skaraborgs Sjukhus	kommun	1486	1	100.0	45	45	None	None
+2026-02-28	501040	Skaraborgs Sjukhus	kommun	1487	1	100.0	38	38	64	26
+2026-02-28	501040	Skaraborgs Sjukhus	kommun	1488	4	100.0	55.5	57.2	104.5	43.5
+2026-02-28	501040	Skaraborgs Sjukhus	kommun	1489	1	None	130	130	None	None
+2026-02-28	501040	Skaraborgs Sjukhus	kommun	1490	1	100.0	78	78	89	11
+2026-02-28	501040	Skaraborgs Sjukhus	kommun	1493	1	100.0	66	66	76	10
+2026-02-28	501040	Skaraborgs Sjukhus	kommun	1494	1	100.0	57	57	None	None
+2026-02-28	501040	Skaraborgs Sjukhus	kommun	1496	1	100.0	36	36	None	None
+2026-02-28	501040	Skaraborgs Sjukhus	kommun	1498	1	100.0	58	58	85	27
+2026-02-28	501050	Södra Älvsborgs Sjukhus	yrkeskategori	XS915	20	88.2	54.0	59.5	87	30
+2026-02-28	501050	Södra Älvsborgs Sjukhus	kontaktform	0	20	88.2	54.0	59.5	87	30
+2026-02-28	501050	Södra Älvsborgs Sjukhus	bokningssatt	2	7	100.0	43	66.1	84.5	25.5
+2026-02-28	501050	Södra Älvsborgs Sjukhus	bokningssatt	3	6	83.3	58.0	61.3	94.5	43.5
+2026-02-28	501050	Södra Älvsborgs Sjukhus	bokningssatt	4	7	80.0	37	51.3	67	16
+2026-02-28	501050	Södra Älvsborgs Sjukhus	remittent	SE0000000000-OPT001	2	0.0	78.5	78.5	91.5	13.0
+2026-02-28	501050	Södra Älvsborgs Sjukhus	remittent	SE0000000000-OPT002	8	100.0	56.0	64.8	89.0	36.0
+2026-02-28	501050	Södra Älvsborgs Sjukhus	remittent	SE0000000000-OPT003	5	80.0	54	59.2	67	13
+2026-02-28	501050	Södra Älvsborgs Sjukhus	remittent	SE0000000000-OPT004	4	100.0	47.0	48.5	96.5	40.0
+2026-02-28	501050	Södra Älvsborgs Sjukhus	kommun	1481	1	None	26	26	57	31
+2026-02-28	501050	Södra Älvsborgs Sjukhus	kommun	1482	2	100.0	45.0	45	82	17
+2026-02-28	501050	Södra Älvsborgs Sjukhus	kommun	1484	2	100.0	45.0	45	56.5	11.5
+2026-02-28	501050	Södra Älvsborgs Sjukhus	kommun	1485	1	100.0	58	58	99	41
+2026-02-28	501050	Södra Älvsborgs Sjukhus	kommun	1487	1	100.0	34	34	87	53
+2026-02-28	501050	Södra Älvsborgs Sjukhus	kommun	1489	1	0.0	95	95	153	58
+2026-02-28	501050	Södra Älvsborgs Sjukhus	kommun	1490	2	100.0	32.0	32	61.5	29.5
+2026-02-28	501050	Södra Älvsborgs Sjukhus	kommun	1491	1	0.0	121	121	137	16
+2026-02-28	501050	Södra Älvsborgs Sjukhus	kommun	1494	1	100.0	37	37	96	59
+2026-02-28	501050	Södra Älvsborgs Sjukhus	kommun	1495	2	100.0	69.5	69.5	109.5	40.0
+2026-02-28	501050	Södra Älvsborgs Sjukhus	kommun	1496	2	100.0	52.0	52	69.5	17.5
+2026-02-28	501050	Södra Älvsborgs Sjukhus	kommun	1497	2	100.0	117.5	117.5	154.5	37.0
+2026-02-28	501050	Södra Älvsborgs Sjukhus	kommun	1498	2	100.0	48.5	48.5	60.0	11.5
+2026-02-28	501060	NU-sjukvården	yrkeskategori	XS915	18	100.0	61.5	65.2	90	34
+2026-02-28	501060	NU-sjukvården	kontaktform	0	17	100.0	61	64.4	90	34
+2026-02-28	501060	NU-sjukvården	kontaktform	91	1	100.0	79	79	None	None
+2026-02-28	501060	NU-sjukvården	bokningssatt	2	5	100.0	32	53.6	106.0	33.0
+2026-02-28	501060	NU-sjukvården	bokningssatt	3	10	100.0	55.5	53.8	84.0	31.0
+2026-02-28	501060	NU-sjukvården	bokningssatt	4	3	100.0	126	122.3	138	36
+2026-02-28	501060	NU-sjukvården	remittent	SE0000000000-OPT001	4	100.0	55.5	70	85.5	14.5
+2026-02-28	501060	NU-sjukvården	remittent	SE0000000000-OPT002	6	100.0	71.5	83.8	106.5	37.0
+2026-02-28	501060	NU-sjukvården	remittent	SE0000000000-OPT003	1	100.0	62	62	90	28
+2026-02-28	501060	NU-sjukvården	remittent	SE0000000000-OPT004	2	100.0	38.5	38.5	81.0	42.5
+2026-02-28	501060	NU-sjukvården	kommun	1480	1	None	126	126	138	12
+2026-02-28	501060	NU-sjukvården	kommun	1481	1	100.0	24	24	None	None
+2026-02-28	501060	NU-sjukvården	kommun	1485	1	100.0	42	42	80	38
+2026-02-28	501060	NU-sjukvården	kommun	1486	2	None	107.5	107.5	134.0	26.5
+2026-02-28	501060	NU-sjukvården	kommun	1487	1	100.0	50	50	None	None
+2026-02-28	501060	NU-sjukvården	kommun	1488	1	100.0	62	62	90	28
+2026-02-28	501060	NU-sjukvården	kommun	1492	2	100.0	97.5	97.5	139.0	41.5
+2026-02-28	501060	NU-sjukvården	kommun	1494	2	100.0	49.0	49	None	None
+2026-02-28	501060	NU-sjukvården	kommun	1495	2	100.0	18.0	18	56.5	38.5
+2026-02-28	501060	NU-sjukvården	kommun	1496	2	100.0	64.0	64	92	43
+2026-02-28	501060	NU-sjukvården	kommun	1497	2	100.0	68.0	68	93.5	25.5
+2026-02-28	501060	NU-sjukvården	kommun	1499	1	100.0	61	61	88	27

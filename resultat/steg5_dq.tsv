@@ -1,0 +1,11 @@
+kontroll	beskrivning	resultat
+DQ0	Finns genomförda rader?	✅ OK
+DQ1	Väntetid beräknad för alla?	✅ OK
+DQ2	Kön är 1 eller 2?	✅ OK
+DQ2	Vårdgaranti är JA/NEJ?	✅ OK
+DQ3	Väntetid >= 0?	✅ OK
+DQ3	Väntetid <= 730 dagar?	✅ OK
+DQ4	Sjukhusnamn ifyllt?	✅ OK
+DQ4	Beslutsdatum ifyllt?	✅ OK
+DQ5	Avvikelsekod logisk?	✅ OK
+DQ6	Median rimlig (58.0d, förväntat 30-120)?	✅ OK
