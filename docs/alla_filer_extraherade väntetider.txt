@@ -1,0 +1,2472 @@
+EXTRAHERAT INNEHÅLL FRÅN 11 FILER
+Domän: Tillgänglighet specialiserad vård (RIV-TA)
+Genererat: 2026-03-19
+
+================================================================================
+FIL: Informationsmodell_Tillga_nglighet_specialiserad_va_rd_ver_1_1_200925-39334.docx
+================================================================================
+Modelldokumentation
+
+Namn: Informationsmodell - Tillgänglighet specialiserad vård
+Version: 1.1
+Datum för senaste ändring: 2020-09-25
+
+Innehåll
+Kort beskrivning av modellen	4
+Klasser som ingår i informationsmodellen	8
+Diagnos	8
+Genomförd vårdkontakt	10
+Mätperiod	15
+Patient	16
+Planerad vårdgivare	18
+Planerad vårdkontakt	20
+Remiss	25
+Remiss för planerad vårdkontakt	26
+Väntande patient	27
+Vårdgivare	29
+Yttre orsak	31
+Åtgärd	32
+ÖV-kontakt akutmottagning	33
+Kodklasser	35
+kodAKTIVITET	36
+kodAKUTVERKSAMHET	36
+kodÅTGÄRDSKOD	37
+kodAVVIKELSE	37
+kodBOKNINGSSÄTT	38
+kodDIAGNOSTYP	38
+kodFAS	39
+kodICD10SE	39
+kodKOMMUN	40
+kodKÖN	40
+kodMVO	40
+kodREMITTENTTYP	41
+kodSoSHoSFÖRT1992	41
+kodVÅRDAVBRUTENAKUTMOTT	41
+kodVÅRDGARANTI	42
+kodVÅRDKONTAKTSTYP	42
+kodYRKESGRUPP	43
+Typklasser i informationsmodellen	44
+typÅÅÅÅ	44
+typÅÅÅÅMMDD	45
+typÅÅÅÅMMDDhhmmss	45
+typHSA-ID	45
+typREMISS-ID	45
+typTIDPUNKT	45
+typUNIKT-ID	45
+typVÅRDKONTAKT-ID	45
+typTEXT	46
+Datatyper	47
+Dokumentinformation	48
+
+
+Kort beskrivning av modellen
+Uppföljning av tillgänglighet i specialiserad vård
+Uppföljningen omfattar såväl väntande som genomförda första besök, operationer, åtgärder samt återbesök. Uppföljningen inkluderar även mätpunkter för vistelsetid samt tid till bedömning på akutmottagning. Väntande och genomförda hanteras i separata leveranser och har därför åskådliggjorts genom två separata informationsmodeller. Informationsmodellen baseras på följande anvisningsdokument:
+
+Specialiserad vård_Uppföljningsmodell_P01.5 _2020-06-16.pdf
+
+Varje attribut i informationsmodellen är preciserad med en datatyp enligt standarden ISO 21090:2011 (se tabellbeskrivning för respektive informationsklass). 
+
+Till varje attribut finns också en hänvisning till ett specifikt värdeförråd som ska användas. Dessa värdeförråd är indelade i två huvudtyper; regelverk (inleds med typ och hänvisar till typklasser som beskrivs i egen modell) och kodverk (inleds med kod och hänvisar till kodklasser som beskrivs i egen modell). Exempel:
+typVÅRDKONTAKT-ID hänvisar till regelverk för konstruktion av unikt id för en vårdkontakt.
+kodFAS hänvisar till kodverket för angivelse av i vilken fas en viss vårdkontakten hör.
+
+
+UML-modell "Informationsmodell - Tillgänglighet specialiserad vård"
+Tre modeller visas på följande sidor:
+Informationsmodell - Uppföljning av tillgänglighet i specialiserad vård, hela modellen
+Informationsmodell – Uppföljning av tillgänglighet i specialiserad vård, i väntan på vårdkontakt
+Informationsmodell – Uppföljning av tillgänglighet i specialiserad vård, genomförd vårdkontakt
+
+Informationsmodell - Tillgänglighet specialiserad vård 
+
+
+
+Informationsmodell - Tillgänglighet specialiserad vård, i väntan på vårdkontakt 
+
+
+Informationsmodell - Tillgänglighet specialiserad vård, genomförd vårdkontakt
+ 
+Klasser som ingår i informationsmodellen
+I det följande beskrivs alla klasser som ingår i modellen.
+Diagnos
+Denna klass håller information om en diagnos som satts för en Genomförd vårdkontakt. Kan antingen vara en huvuddiagnos eller en bidiagnos.
+
+Relation:
+gäller för 1..1 Genomförd vårdkontakt 
+
+
+Genomförd vårdkontakt
+Denna klass håller information om en vårdkontakt i specialiserad vård som har genomförts under en Mätperiod .
+
+Relationer:
+ingår i 1..1 Mätperiod 
+gäller för 1..1 Patient 
+genomförd av 1..1 Vårdgivare 
+har 0..1 Remiss 
+har 0..* Diagnos 
+har 0..* Åtgärd 
+föranleds av 0..* Yttre orsak 
+har specialisering ÖV-kontakt akutmottagning 
+
+
+Mätperiod
+Denna klass håller information om en viss mätperiod avseende tillgänglighet specialiserad vård.
+
+Relationer:
+omfattar 1..* Planerad vårdkontakt 
+omfattar 1..* Genomförd vårdkontakt 
+
+
+Patient
+Denna klass håller information om den Patient som Genomförd vårdkontakt gäller för.
+
+Patienten är här inte identifierad, därför är denna information endast giltig för denna genomförda vårdkontakt.
+
+Relationer:
+gäller för 1..1 Genomförd vårdkontakt 
+
+
+Planerad vårdgivare
+Denna klass håller information om den vårdgivare och vårdenhet som vårdkontakten är planerad till, eller vid vilken vårdkontakten har utförts.
+
+Relationer:
+inplanerad för 1..* Planerad vårdkontakt 
+
+
+Planerad vårdkontakt
+Denna klass håller information om en vårdkontakt i specialiserad vård som en Väntande patient är inplanerad till och som ingår i en eller flera Mätperioder. 
+
+Fråga: kan en planerad vårdkontakt ingå i flera mätperioder?
+
+Relationer:
+ingår i 1..* Mätperiod 
+gäller för 1..1 Väntande patient 
+har 0..1 Remiss för planerad vårdkontakt 
+kontakt hos 1..1 Planerad vårdgivare 
+
+
+Remiss
+Denna klass håller information om en remiss som gäller för en Genomförd vårdkontakt . 
+
+Uppgifter om remiss är frivilliga.
+
+Relationer:
+gäller för 0..1 Genomförd vårdkontakt 
+
+
+Remiss för planerad vårdkontakt
+Denna klass håller information om en remiss som gäller för en Planerad vårdkontakt.
+
+Uppgifter om remiss är frivilliga. 
+
+Relationer:
+gäller för 1..1 Planerad vårdkontakt 
+
+
+Väntande patient
+Denna klass håller information om den Väntande patient som Planerad vårdkontakt  gäller för.
+
+Relationer:
+gäller för 1..1 Planerad vårdkontakt 
+
+
+
+Vårdgivare
+Denna klass håller information om en vårdgivare och vårdenhet som är ansvarig för Genomförd vårdkontakt.
+
+Relationer:
+har genomfört 1..* Genomförd vårdkontakt 
+
+
+Yttre orsak
+Klassen hanterar information om yttre orsaker som föranledde den genomförda vårdkontakten. 
+
+Yttre orsaker till sjukdom och död behövs för att beskriva olycksfall, vårdkomplikationer, ogynnsamma effekter av läkemedel och självdestruktiva handlingar.
+
+Relationer:
+gäller för 1..1 Genomförd vårdkontakt 
+
+
+Åtgärd
+Denna klass håller information om en åtgärd som genomförts under en Genomförd vårdkontakt. 
+
+Relationer:
+gäller för 1..1 Genomförd vårdkontakt 
+
+
+ÖV-kontakt akutmottagning
+Denna klass hanterar information om en genomförd vårdkontakt vid en akutmottagning med två eller fler specialiteter som är samlokaliserade.
+
+Relationer:
+ÖV-kontakt akutmottagning är en specialisering av Genomförd vårdkontakt och ärver därmed alla egenskaper (attribut och relationer) hos denna klass. 
+
+
+Kodklasser i informationsmodellen
+Denna informationsmodell visar de kodklasser som pekas ut i informationsmodellen för uppföljning av tillgänglighet i specialiserad vård (attribut med datatypen CD.CV och där angivelse av värdeförråd inleds med benämningen kod).
+
+Kodklasser informationsmodell - Uppföljning av tillgänglighet i specialiserad vård 
+
+kodAKTIVITET
+Denna klass hanterar koder för angivelse av åtgärder enligt SKL vårdutbudsförteckning.
+
+kodAKUTVERKSAMHET
+Denna kodklass hanterar koder för angivelse av typ av akutverksamhet (se tabell 7.9):
+
+0 = Ej akutverksamhet
+
+1 = Akutmottagning med två eller fler somatiska specialiteter som är samlokaliserade
+
+2 = Akutmottagning med endast en somatisk specialitet
+
+3 = Psykiatrisk akutmottagning (anges även om mottagningen är samlokaliserad med annan specialitet)
+
+4 = Närakut eller närsjukhus med jourmottagning
+
+5 = Övrig akutverksamhet
+
+
+kodÅTGÄRDSKOD
+Denna kodklass hanterar koder för åtgärder enligt KVÅ, klassifikation av åtgärder.
+
+https://www.socialstyrelsen.se/utveckla-verksamhet/e-halsa/klassificering-och-koder/kva/
+
+kodAVVIKELSE
+Denna kodklass hanterar koder för beskrivning av avvikelse vad gäller vårdgaranti (se tabell 7.7):
+
+1 = Patientvald väntan
+Patientvald väntan (PvV): Patienter som har väntat längre än vad vårdgarantins tidsgräns anger. Patienten är informerad och har aktivt avstått erbjudande om vård inom vårdgarantins tidsgräns eller tidsgränsen för medicinskt måldatum
+
+2 = Medicinskt orsakad väntan
+Medicinskt orsakad väntan (MOV): Patienter där hälso- och sjukvårdspersonal bedömer och beslutar att patientens hälsotillstånd (av medicinska skäl) inte tillåter att en planerad kontakt genomförs.
+
+3 = Särskilt orsakad väntan
+Särskild orsak väntan (SOV): Patienter där hälso- och sjukvårdspersonal bedömer och beslutar att patientens planerade kontakt på grund av annan yttre orsak inte kan genomföras. Särskilt orsakad väntan är en avvikelse som enbart används av Barn- och ungdomspsykiatriska enheter och andra berörda enheter.
+
+
+kodBOKNINGSSÄTT
+Denna kodklass hanterar de koder som används för beskrivning av hur ett besök bokas (se tabell 7.2):
+
+1=Bokat själv
+Patienten alternativt vården initierar kontakten. Patienten bokar själv kontakten via ex webbtidbok.
+2=Bokad/överenskommen tid
+Patienten alternativt vården initierar kontakten. Tid bokas direkt i samråd, överenskommen tid.
+3=Bokad/erbjuden tid
+Patienten alternativt vården initierar kontakten. Tid bokas och erbjuds patienten
+4=Bokad
+Patienten alternativt vården initierar kontakten. Tid bokas och erbjuds patienten, alternativt bokas direkt i samråd, överenskommen tid. Används om inte 2 eller 3 kan identifieras
+5=Obokad
+Kontakten har inte varit planerad, exempelvis drop in. 
+
+kodDIAGNOSTYP
+Denna kodklass hanterar koder för angivelse om en diagnos är huvuddiagnos eller bidiagnos (se tabell 7.5):
+
+1 = Huvuddiagnos
+Det tillstånd som är den huvudsakliga anledningen till en vårdkontakt, fastställd vid vårdkontaktens slut
+
+0 = Bidiagnos
+Annat tillstånd än huvuddiagnos som blivit föremål för bedömning, utredning eller behandling under en vårdkontakt
+
+
+
+kodFAS
+Denna kodklass hanterar de koder som används för identifiering av händelseförlopp (se tabell 7.8):
+
+1 = Första kontakt - Första kontakt planerad vård 
+
+2 = Operation/åtgärd - Operation/åtgärd planerad vård
+
+3 = Undersökning - Undersökning planerad vård
+
+4 = Återbesök - Avser kontakter som inte klassats som första kontakt, operation/åtgärd, undersökning eller akut kontakt.
+
+5 = Akut kontakt - ”akut” är ett medicinskt ställningstagande när patienten tas emot och har ingen koppling till om patienten är planerad eller ej, dvs. har fått en tid eller ej” (Förtydligande till föreskrifter av uppgiftsskyldighet till patientregistret – SOSFS 2013:30)
+
+kodICD10SE
+Denna kodklass hanterar koder för diagnos enligt ICD-10-SE, KSH97.
+
+
+
+
+kodKOMMUN
+Denna kodklass visar de koder som används för angivelse av kod för viss kommun enligt SCB:s klassificering (länskod+kommunkod, t ex för Ronneby 1081 där 10 är Blekinge och 81 Ronneby).
+
+kodKÖN
+Kodklass för beskrivning av en patients kön (se tabell 7.1):
+
+1=Man
+
+2=Kvinna
+
+3=Kön okänt
+
+kodMVO
+Definition:
+Medicinska verksamhetsområden klassificeras efter specialitet och inriktning och utgör indelningsgrund för den nationella statistiken. (Socialstyrelsens termbank)
+
+
+
+kodREMITTENTTYP
+Denna kodklass hanterar koder för angivelse av typ av remittent (se tabell 7.4):
+
+1=Remiss
+Handling som utgör beställning av tjänst eller begäran
+om övertagande av vårdansvar för en patient
+
+2=Egen vårdbegäran
+Begäran om erhållande av sjukvård
+
+kodSoSHoSFÖRT1992
+Denna kodklass hanterar koder för angivelse av sjukhus enligt Socialstyrelsens hälso- och sjukvårdsförteckning 1992 med fortlöpande kompletteringar från Socialstyrelsen. Samma kod som i andra integrationer benämns som SKLs interna organisationskod.
+
+kodVÅRDAVBRUTENAKUTMOTT
+Denna kodklass hanterar koder för angivelse av orsak till att vård avbrutits på akutmottagning (se tabell 7.10):
+
+1 = patienten avviker på eget initiativ efter läkarbedömning
+
+
+
+kodVÅRDGARANTI
+Denna kodklass hanterar koder för om en vårdkontakt innefattas i vårdgarantin eller inte. Se tabell 7.10
+
+1 = Vårdgaranti JA
+2 = Vårdgaranti NEJ
+
+kodVÅRDKONTAKTSTYP
+Denna kodklass hanterar koder för beskrivning av typer av vårdkontakter (se tabell 7.3):
+
+0 = besök på mottagning/vårdenhet där en patient möter en hälso- och sjukvårdspersonalmed självständigt behandlingsansvar
+1 = besök på mottagning/vårdenhet där en patient möter ett vårdteam (teambesök)
+2 = besök på mottagning/vårdenhet där flera patienter i grupp möter en hälso- och sjukvårdspersonal med självständigt behandlingsansvar (gruppbesök)
+3 = besök på mottagning/vårdenhet där flera patienter i grupp möter ett vårdteam (gruppteambesök)
+4 = besök i en patients bostad eller motsvarande där patienten möter en hälso- och sjukvårdspersonal med självständigt behandlingsansvar (hembesök)
+5 = besök i en patients bostad eller motsvarande där patienten möter ett vårdteam
+6 = besök på annan plats där en patient möter en hälso- och sjukvårdspersonal med självständigt behandlingsansvar
+7 = besök på annan plats där en patient möter ett vårdteam
+8 = telefon- och brevkontakter avseende kvalificerad hälso- och sjukvård
+Kommunikation via telefon, fysiska brev eller mail
+81 = Distanskontakt via videolänk
+Digitalt vårdmöte synkront, överföring av ljud och bild i kombination
+82 = Skriftlig distanskontakt/digitalt vårdmöte
+Digitalt vårdmöte synkront, asynkront. Överföring av text, ej mail
+83 = Distanskontakt/digitalt vårdmöte
+Digitalt vårdmöte synkront, asynkront. överföring av ljud och bild i kombination alternativt text, ej mail. Används om inte 81 eller 82 kan identifieras
+91 = Vårdtillfälle
+Vårdkontakt i sluten vård
+Vårdtillfälle avgränsas av in- och utskrivning inom ett medicinskt verksamhetsområde. Rapporteras enbart som vårdkontakt i samband med operation/åtgärd/undersökning i sluten vård.
+kodYRKESGRUPP
+Denna kodklass hanterar koder för beskrivning av olika yrkesgrupper (se tabell 7.6):
+
+XS910 Arbetsterapeut
+XS911 Audionom
+XS912 Dietist
+XS913 Kurator
+XS914 Logoped
+XS915 Läkare
+XS916 Ortoptist
+XS917 Psykolog
+XS918 Fysioterapeut/sjukgymnast
+XS919 Sjuksköterska
+XS920 Skötare
+XS921 Undersköterska
+XS922 Övriga
+XS923 Naprapat
+XS924 Kiropraktor
+XS925 Barnmorska
+XS926 Optiker
+
+Typklasser i informationsmodellen
+Denna informationsmodell visar de typklasser som pekas ut i informationsmodellen för uppföljning av specialiserad vård (attribut där datatypen inte är CD.CV och där angivelse av värdeförråd inleds med benämningen typ).
+
+Typklasserna beskriver regelverk för exempelvis konstruktion av en unik identitet för en instans (datatypen II) eller angivelse av tidpunkter (datatypen TS).
+
+Typklasser informationsmodell - Uppföljning av tillgänglighet specialiserad vård 
+
+I det följande beskrivs alla klasser som ingår i modellen.
+typÅÅÅÅ
+Denna typklass beskriver regelverk för uttryckande av årtal och är en specialisering av typklassen typTIDPUNKT .
+
+Årtal skrivs med fyra siffror enligt ÅÅÅÅ. 
+typÅÅÅÅMMDD
+Denna typklass beskriver regelverk för uttryckande av år-månad-dag och är en specialisering av typklassen typTIDPUNKT .
+
+År-månad-dag skrivs med åtta siffror enligt ÅÅÅÅMMDD. 
+typÅÅÅÅMMDDhhmmss
+Denna typklass beskriver regelverk för uttryckande av år-månad-dag-klockslag och är en specialisering av typklassen typTIDPUNKT .
+
+År-månad-dag-klockslag skrivs med 14 siffror enligt ÅÅÅÅMMDDhhmmss. 
+typHSA-ID
+Denna typklass beskriver regelverk för uttryckande av ett unikt HSA-id och är en specialisering av typUNIKT-ID 
+typREMISS-ID
+Denna typklass beskriver regelverk för uttryckande av ett unikt remiss-id och är en specialisering av typUNIKT-ID 
+typTIDPUNKT
+Denna typklass beskriver regelverk för uttryckande av tidpunkter. Klassen har ett antal specialiseringar.
+typUNIKT-ID
+Denna typklass beskriver regelverk för uttryckande av ett unikt id. Klassen har flera specialiseringar.
+typVÅRDKONTAKT-ID
+Denna typklass beskriver regelverk för uttryckande av ett unikt vårdkontakt-id och är en specialisering av typUNIKT-ID 
+typTEXT
+Denna typklass beskriver regelverk för uttryckande av fritext.
+
+
+
+
+Datatyper
+Följande datatyper enligt standarden ISO 21090 Hälso- och sjukvårdsinformatik – Harmoniserade datatyper för informationsutbyte används i modellen.
+
+
+
+
+Dokumentinformation
+
+
+
+
+--- Tabell 1 ---
+Attribut | Beskrivning | Datatyp
+Värdeförråd | Multiplicitet
+diagnoskod | Samtliga diagnoser som haft klinisk relevans för kontakten. Används vid uppföljning av medicinsk bedömning.
+
+Definition:
+statistisk kod för klassificering av sjukdomar och relaterade hälsoproblem
+(Socialstyrelsens termbank)
+
+Variabelnamn: Diagnoskod
+XSD attribut: Diagnos | CD.CV
+kodICD10SE | [1...1]
+diagnostyp | Huvuddiagnos, bidiagnos
+
+Fasta val se tabell 7.5
+
+Definition:
+Huvuddiagnos: det tillstånd som är den huvudsakliga anledningen till en vårdkontakt, fastställd vid vårdkontaktens slut
+Bidiagnos: annat tillstånd än huvuddiagnos som blivit föremål för bedömning, utredning eller behandling under en vårdkontakt
+(Socialstyrelsens termbank)
+
+Variabelnnamn: Typ av diagnos
+XSD attribut: TypDiagnos | CD.CV
+kodDIAGNOSTYP | [1...1]
+
+--- Tabell 2 ---
+Attribut | Beskrivning | Datatyp
+Värdeförråd | Multiplicitet
+vårdkontakt-id | Vårdkontaktens unika identifikation som skapas av uppgiftslämnaren.
+
+Variabelnamn: Vårdkontakt-id
+XSD attribut: VardkontaktId | II
+typVÅRDKONTAKT-ID | [1...1]
+vårdgaranti | Identifierar om kontakten innefattas i vårdgarantin.
+
+Vårdgarantin innebär att en patient ska få vård inom en viss tid och är en lagstadgad del av hälso- och sjukvården. Vårdgarantin anger inom vilka tidsgränser vård ska erbjudas.
+
+Fasta val, se tabell 7.11
+
+1 = Vårdgaranti JA
+2 = Vårdgaranti NEJ
+
+Variabelnamn: Vårdgaranti JA/NEJ
+XSD attribut: Vardgaranti | CD.CV
+kodVÅRDGARANTI | [1...1]
+fas | Identifierar del av händelseförlopp, första kontakt, operation/ åtgärd/, undersökning, återbesök, akut kontakt.
+
+Fasta val, se tabell 7.8
+
+1 = Första kontakt - Första kontakt planerad vård
+2 = Operation/åtgärd - Operation/åtgärd planerad vård
+3 = Undersökning - Undersökning planerad vård
+4 = Återbesök - Återbesök, ej vårdgaranti planerad vård
+5 = Akut kontakt - ”akut” är ett medicinskt ställningstagande när patienten tas emot och har ingen koppling till om patienten är planerad eller ej, dvs. har fått en tid eller ej” (Förtydligande till föreskrifter av uppgiftsskyldighet till patientregistret – SOSFS 2013:30)
+
+Variabelnamn: Fas
+XSD attribut: Fas | CD.CV
+kodFAS | [1...1]
+medicinsktVerksamhetsområde | Medicinskt verksamhetsområde anges för samtliga kontakter.
+
+Ska registreras med hjälp av den 3- siffriga koden i Socialstyrelsens hälso- och sjukvårdsförteckning 1992 med fortlöpande kompletteringar från Socialstyrelsen.
+
+Definition:
+Medicinska verksamhetsområden klassificeras efter specialitet och inriktning och utgör indelningsgrund för den nationella statistiken. (Socialstyrelsens termbank)
+
+Variabelnamn: Medicinskt verksamhetsområde
+XSD attribut: Mvo | CD.CV
+kodMVO | [1...1]
+aktivitet | Aktivitet är enbart obligatoriskt vid rapportering av operation/ åtgärd/undersökning enligt SKR åtgärd/vårdutbudsförteckning. Lämnas tomt vid rapportering av övriga faser.
+
+Variabelnamn: Aktivitet
+XSD attribut: Aktivitet | CD.CV
+kodAKTIVITET | [1...1]
+bokningssätt | Kod för hur besöket bokas.
+
+Fasta val se tabell 7.2
+
+Variabelnamn: Boknigssätt
+XSD attribut: Bokningssatt | CD.CV
+kodBOKNINGSSÄTT | [1...1]
+vårdkontakt | Kod för att identifiera form av vårdkontakt, se tabell 7.3
+
+OBS! Besök till medicinsk service ingår inte i mätningen.
+Besök inom medicinsk service, exempelvis för provtagning, ska normalt inte redovisas som öppenvårdsbesök. Om provtagningen däremot inbegriper samtal och ordination till fortsatt behandling ska ett besök redovisas under förutsättning att samtalet och ordinationen annars hade fått ske vid annat besök.
+
+Källa:
+VERKSAMHET OCH EKONOMI I LANDSTING OCH REGIONER
+Verksamhetsindelning VI 2000
+
+Variabelnamn: Vårdkontakt
+XSD attribut: Vardkontakt | CD.CV
+kodVÅRDKONTAKTSTYP | [1...1]
+yrkesgrupp | För varje kontakt ska yrkesgrupp anges enligt lista. Se tabell 7.6
+
+Varaibelnamn: Yrkesgrupp
+XSD attribut: Yrkeskategori | CD.CV
+kodYRKESGRUPP | [1...1]
+avvikelse | PVV, MOV, SOV Anges om patienten själv valt att vänta eller om det föreligger medicinska skäl för väntan. Se tabell 7.7.
+
+Obligatorisk då förekomst finns.
+
+Variabelnamn: Avvikelse
+XSD attribut: Avvikelse | CD.CV
+kodAVVIKELSE | [0..1]
+remittenttyp | Kod för angivelse av hur kontakten aktualiserats med vårdgivaren. Se tabell 7.4
+
+1= Remiss - Handling som utgör beställning av tjänst eller begäran om övertagande av vårdansvar för en patient
+
+2=Egen vårdbegäran - Begäran om erhållande av sjukvård
+
+Obligatoriskt om förekomst finns.
+OBS! om remittenttyp = 1 Remiss bör uppgifter om remiss även anges, se klass Remiss
+
+XSD attribut = Remittenttyp | CD.CV
+kodREMITTENTTYP | [0..1]
+beslutOmAktivitet | Väntetidsstart för första kontakt, operation, åtgärd, återbesök. 
+För första kontakt anges datum för beslut att framställa vårdbegäran. För operation, åtgärd, återbesök, övriga kontakter anges beslutsdatum för aktivitet.
+
+Obligatoriskt om förekomst finns.
+
+Definition:
+Avser tidpunkt, datum och klockslag för beslut att genomföra aktivitet. (Flödesmodellen)
+
+Variabelnamn: Beslut att utföra aktivitet
+XSD attribut: BeslutAktivitet | TS
+typÅÅÅÅMMDDhhmmss | [1...1]
+startAvAktivitet | Väntetidsslut första kontakt, operation, åtgärd, återbesök.
+
+Avser tidpunkt, datum och klockslag för start av aktivitet. (Flödesmodellen)
+
+Variabelnamn: Start av aktivitet
+XSD attribut: StartAktivitet | TS
+typÅÅÅÅMMDDhhmmss | [1...1]
+medicinsktMåldatum | Avser tidpunkt, datum och klockslag för när öppenvårdskontakt, operation, undersökning, åtgärd senast bör inledas. Obligatoriskt vid återbesökbesök.
+
+Variabelnamn: Medicinskt måldatum
+XSD attribut: MedicinsktMaldatum | TS
+typÅÅÅÅMMDDhhmmss | [0..1]
+akutverksamhet | Typ av akutverksamhet. Alla akuta besök rapporteras med något av alternativen 1-5, ej akutverksamhet rapporteras med 0 (se tabell 7.9).
+
+Variabelnamn: Akutverksamhet
+XSD attribut: TypAkutverksamhet | CD.CV
+kodAKUTVERKSAMHET | [1...1]
+
+--- Tabell 3 ---
+Attribut | Beskrivning | Datatyp
+Värdeförråd | Multiplicitet
+mätperiod | Mätperioden är kalendermånad.
+Väntande vid månadsskifte, genomförda kontakter rapporteras senast den 20:e efterföljande månad.
+
+Variabelnamn: Mätperiod
+XSD attribut: DatatGallerFor | TS
+typÅÅÅÅMMDD | [1...1]
+
+--- Tabell 4 ---
+Attribut | Beskrivning | Datatyp
+Värdeförråd | Multiplicitet
+födelseår | Patientens födelseår. Det år då patienten föddes 
+Redovisas med fyra siffror, t.ex. 1980.
+
+Format: ÅÅÅÅ
+
+Variabelnamn: Födelseår
+XSD attribut: FodelseAr | TS
+typÅÅÅÅ | [1...1]
+kön | Patientens kön. 
+
+Fasta val, se tabell 7.1
+
+Variabelnamn: Kön
+XSD attribut: Kon | CD.CV
+kodKÖN | [1...1]
+kommunkod | Patientens folkbokföringskommun vid tidpunkt för den planerade alternativt genomförda vårdkontakten.
+
+Kod för kommun i enlighet med SCBs klassificering.
+Saknas korrekt kod anges 0000
+
+Variabelnamn: KommunKod
+XSD attribut: Lkf | CD.CV
+kodKOMMUN | [1...1]
+listadHos | Patientens listning. Identifierare för vårdcentral där patienten är listad vid tidpunkt för den planerade alternativt genomförda kontakten.
+
+Variabelnamn: Listning
+XSD attribut: HSAIdPatientListning | II
+typHSA-ID | [0..1]
+
+--- Tabell 5 ---
+Attribut | Beskrivning | Datatyp
+Värdeförråd | Multiplicitet
+huvudman | Identifierare för region. HSA-id högsta nivå, producent. Ansvarig region anses som högsta nivå, producent för de enheter där avtal finns och data levereras.
+
+Variabelnamn: Huvudman
+XSD attribut: HSAIdRegion | II
+typHSA-ID | [1...1]
+vårdgivare | Identifierare för vårdgivare, HSA- Id. Här avses vårdgivare enligt definition i Socialstyrelsens termbank
+
+Variabelnamn: Vårdgivare
+XSD attribut: HSAIdVardgivare | II
+typHSA-ID | [1...1]
+vårdenhet1 | Ska registreras med hjälp av den 5- eller 6-siffriga koden i Socialstyrelsens hälso- och sjukvårdsförteckning 1992 med fortlöpandekompletteringar från Socialstyrelsen.
+Enheter som inte kan kopplas till ett specifikt sjukhus rapporteras med ”00000”
+
+Variabelnamn: Vårdenhet1
+XSD attribut: Sjukhus | II
+kodSoSHoSFÖRT1992 | [0..1]
+vårdenhet1Namn | Enheter som inte kan kopplas till ett specifikt sjukhus rapporteras med ”Sjukhus saknas”
+
+Variabelnamn: Vårdenhet1_namn
+XSD attribut: SjukhusNamn | ST
+typTEXT | [0..1]
+vårdenhet2 | Vårdenhet, klinik
+
+Variabelnamn: Vårdenhet2
+XSD: HSAIdVardenhet | II
+typHSA-ID | [1...1]
+vårdenhet3 | Vårdenhet, klinik
+
+Variabelnamn: Vårdenhet3
+XSD: HSAIdEnhet | II
+typHSA-ID | [0..1]
+/ägarform | Identifierare för ägarform
+1 = Landsting/region 
+2 = Privat
+
+Hämtas från HSA katalogen, rapporteras inte | CD.CV | 
+
+--- Tabell 6 ---
+Attribut | Beskrivning | Datatyp
+Värdeförråd | Multiplicitet
+vårdkontakt-id | Vårdkontaktens unika identifikation som skapas av uppgiftslämnaren.
+
+Variabelnamn: Vårdkontakt-id
+XSD attribut: VardkontaktId | II
+typVÅRDKONTAKT-ID | [1...1]
+vårdgaranti | Identifierar om kontakten innefattas i vårdgarantin.
+
+Vårdgarantin innebär att en patient ska få vård inom en viss tid och är en lagstadgad del av hälso- och sjukvården. Vårdgarantin anger inom vilka tidsgränser vård ska erbjudas.
+
+Fasta val, se tabell 7.11
+
+1 = Vårdgaranti JA
+2 = Vårdgaranti NEJ
+
+Variabelnamn: Vårdgaranti JA/NEJ
+XSD attribut: Vardgaranti | CD.CV
+
+kodVÅRDGARANTI | [1...1]
+fas | Identifierar del av händelseförlopp, första kontakt, operation/ åtgärd/, undersökning, återbesök, akut kontakt.
+
+Fasta val, se tabell 7.8
+
+1 = Första kontakt - Första kontakt planerad vård
+2 = Operation/åtgärd - Operation/åtgärd planerad vård
+3 = Undersökning - Undersökning planerad vård
+4 = Återbesök - Återbesök, ej vårdgaranti planerad vård
+5 = Akut kontakt - ”akut” är ett medicinskt ställningstagande när patienten tas emot och har ingen koppling till om patienten är planerad eller ej, dvs. har fått en tid eller ej” (Förtydligande till föreskrifter av uppgiftsskyldighet till patientregistret – SOSFS 2013:30)
+
+Variabelnamn: Fas
+XSD attribut: Fas | CD.CV
+kodFAS | [1...1]
+medicinsktVerksamhetsområde | Medicinskt verksamhetsområde anges för samtliga kontakter.
+
+Ska registreras med hjälp av den 3- siffriga koden i Socialstyrelsens hälso- och sjukvårdsförteckning 1992 med fortlöpande kompletteringar från Socialstyrelsen.
+
+Definition:
+Medicinska verksamhetsområden klassificeras efter specialitet och inriktning och utgör indelningsgrund för den nationella statistiken. (Socialstyrelsens termbank)
+
+Variabelnamn: Medicinskt verksamhetsområde
+XSD attribut: Mvo | CD.CV
+kodMVO | [1...1]
+aktivitet | Aktivitet är enbart obligatoriskt vid rapportering av operation/ åtgärd/undersökning enligt SKR åtgärd/vårdutbudsförteckning. Lämnas tomt vid rapportering av övriga faser.
+
+Variabelnamn: Aktivitet
+XSD attribut: Aktivitet | CD.CV
+kodAKTIVITET | [1...1]
+bokningssätt | Kod för hur besöket bokas.
+
+Fasta val se tabell 7.2
+
+Variabelnamn: Boknigssätt
+XSD attribut: Bokningssatt | CD.CV
+kodBOKNINGSSÄTT | [1...1]
+vårdkontakt | Kod för att identifiera form av vårdkontakt, se tabell 7.3
+
+OBS! Besök till medicinsk service ingår inte i mätningen.
+Besök inom medicinsk service, exempelvis för provtagning, ska normalt inte redovisas som öppenvårdsbesök. Om provtagningen däremot inbegriper samtal och ordination till fortsatt behandling ska ett besök redovisas under förutsättning att samtalet och ordinationen annars hade fått ske vid annat besök.
+
+Källa:
+VERKSAMHET OCH EKONOMI I LANDSTING OCH REGIONER
+Verksamhetsindelning VI 2000
+
+Variabelnamn: Vårdkontakt
+XSD attribut: Vardkontakt | CD.CV
+kodVÅRDKONTAKTSTYP | [1...1]
+yrkesgrupp | För varje kontakt ska yrkesgrupp anges enligt lista. Se tabell 7.6
+
+Varaibelnamn: Yrkesgrupp
+XSD attribut: Yrkeskategori | CD.CV
+kodYRKESGRUPP | [1...1]
+avvikelse | PVV, MOV, SOV Anges om patienten själv valt att vänta eller om det föreligger medicinska skäl för väntan. Se tabell 7.7.
+
+Obligatorisk då förekomst finns.
+
+Variabelnamn: Avvikelse
+XSD attribut: Avvikelse | CD.CV
+kodAVVIKELSE | [0..1]
+remittenttyp | Kod för angivelse av hur kontakten aktualiserats med vårdgivaren. Se tabell 7.4.
+
+1= Remiss - Handling som utgör beställning av tjänst eller begäran om övertagande av vårdansvar för en patient
+2= Egen vårdbegäran - Begäran om erhållande av sjukvård
+
+Obligatoriskt om förekomst finns.
+OBS! om remittenttyp = 1 Remiss bör uppgifter om remiss även anges, se klass Remiss
+
+Variabelnamn: Remittenttyp
+XSD attribut = Remittenttyp | CD.CV
+
+kodREMITTENTTYP | [0..1]
+beslutOmAktivitet | Väntetidsstart för första kontakt, operation, åtgärd, återbesök. 
+För första kontakt anges datum för beslut att framställa vårdbegäran. För operation, åtgärd, återbesök, övriga kontakter anges beslutsdatum för aktivitet.
+
+Definition:
+Avser tidpunkt, datum och klockslag för beslut att genomföra aktivitet. (Flödesmodellen)
+
+Variabelnamn: Beslut att utföra aktivitet
+XSD attribut: BeslutAktivitet | TS
+typÅÅÅÅMMDDhhmmss | [1...1]
+medicinsktMåldatum | Avser tidpunkt, datum och klockslag för när öppenvårdskontakt, operation, undersökning, åtgärd senast bör inledas. Obligatoriskt vid återbesök.
+
+Variabelnamn: Medicinskt måldatum
+XSD attribut: MedicinsktMaldatum | TS
+typÅÅÅÅMMDDhhmmss | [0..1]
+
+--- Tabell 7 ---
+Attribut | Beskrivning | Datatyp
+Värdeförråd | Multiplicitet
+remiss-id | Remissens unika identifikation som skapas av uppgiftslämnaren, ska anges på alla kontakter som kan kopplas till remissen.
+
+Variabelnamn: RemissID
+XSD attribut: RemissId | II
+typREMISS-ID | [0..1]
+remittent | Identifierare för remitterande enhet.
+
+Variabelnamn: Remittent
+XSD attribut. Remittent | II
+typHSA-ID | [0..1]
+remissdatum | Datum för skapande remiss.
+
+Variabelnamn: Remissdatum
+XSD attribut: RemissDatum | TS
+typÅÅÅÅMMDDhhmmss | [0..1]
+ankomstdatum | Datum för ankomst remiss.
+
+Variabelnamn: Ankomstdatum
+XSD attribut: AnkomstDatum | TS
+typÅÅÅÅMMDDhhmmss | [0..1]
+
+--- Tabell 8 ---
+Attribut | Beskrivning | Datatyp
+Värdeförråd | Multiplicitet
+remiss-id | Remissens unika identifikation som skapas av uppgiftslämnaren, ska anges på alla kontakter som kan kopplas till remissen.
+
+Variabelnamn: RemissID
+XSD attribut: RemissId | II
+typREMISS-ID | [0..1]
+remittent | Identifierare för remitterande enhet.
+
+Variabelnamn: Remittent
+XSD attribut. Remittent | II
+typHSA-ID | [0..1]
+remissdatum | Datum för skapande remiss.
+
+Variabelnamn: Remissdatum
+XSD attribut: RemissDatum | TS
+typÅÅÅÅMMDDhhmmss | [0..1]
+ankomstdatum | Datum för ankomst remiss.
+
+Variabelnamn: Ankomstdatum
+XSD attribut: AnkomstDatum | TS
+typÅÅÅÅMMDDhhmmss | [0..1]
+
+--- Tabell 9 ---
+Attribut | Beskrivning | Datatyp
+Värdeförråd | Multiplicitet
+födelseår | Patientens födelseår. Det år då patienten föddes 
+Redovisas med fyra siffror, t.ex. 1980.
+
+Format: ÅÅÅÅ
+
+Variabelnamn: Födelseår
+XSD attribut: FodelseAr | TS
+typÅÅÅÅ | [1...1]
+kön | Patientens kön. 
+
+Fasta val, se tabell 7.1
+
+Variabelnamn: Kön
+XSD attribut: Kon | CD.CV
+kodKÖN | [1...1]
+kommunkod | Patientens folkbokföringskommun vid tidpunkt för den planerade alternativt genomförda vårdkontakten.
+
+Kod för kommun i enlighet med SCBs klassificering.
+Saknas korrekt kod anges 0000
+
+Variabelnamn: KommunKod
+XSD attribut: Lkf | CD.CV
+kodKOMMUN | [1...1]
+listadHos | Patientens listning. Identifierare för vårdcentral där patienten är listad vid tidpunkt för den planerade alternativt genomförda kontakten.
+
+Variabelnamn: Listning
+XSD attribut: HSAIdPatientListning | II
+typHSA-ID | [0..1]
+
+--- Tabell 10 ---
+Attribut | Beskrivning | Datatyp
+Värdeförråd | Multiplicitet
+huvudman | Identifierare för region. HSA-id högsta nivå, producent. Ansvarig region anses som högsta nivå, producent för de enheter där avtal finns och data levereras.
+
+Variabelnamn: Huvudman
+XSD attribut: HSAIdRegion | II
+typHSA-ID | [1...1]
+vårdgivare | Identifierare för vårdgivare, HSA- Id. Här avses vårdgivare enligt definition i Socialstyrelsens termbank
+
+Variabelnamn: Vårdgivare
+XSD attribut: HSAIdVardgivare | II
+typHSA-ID | [1...1]
+vårdenhet1 | Ska registreras med hjälp av den 5- eller 6-siffriga koden i Socialstyrelsens hälso- och sjukvårdsförteckning 1992 med fortlöpandekompletteringar från Socialstyrelsen.
+Enheter som inte kan kopplas till ett specifikt sjukhus rapporteras med ”00000”
+
+Variabelnamn: Vårdenhet1
+XSD attribut: Sjukhus | II
+kodSoSHoSFÖRT1992 | [1...1]
+vårdenhet1Namn | Enheter som inte kan kopplas till ett specifikt sjukhus rapporteras med ”Sjukhus saknas”
+
+Variabelnamn: Vårdenhet1_namn
+XSD attribut: SjukhusNamn | ST
+typTEXT | [1...1]
+vårdenhet2 | Vårdenhet, klinik
+
+Variabelnamn:Vårdenhet2
+XSD: HSAIdVardenhet | II
+typHSA-ID | [1...1]
+vårdenhet3 | Vårdenhet, klinik
+
+Variabelnamn:Vårdenhet3
+XSD: HSAIdEnhet | II
+typHSA-ID | [0..1]
+/ägarform | Identifierare för ägarform
+1 = Landsting/region 
+2 = Privat
+
+Hämtas från HSA katalogen, rapporteras inte | CD.CV | 
+
+--- Tabell 11 ---
+Attribut | Beskrivning | Datatyp
+Värdeförråd | Multiplicitet
+yttreOrsak | Yttre orsaker till sjukdom och död behövs för att beskriva olycksfall, vårdkomplikationer, ogynnsamma effekter av läkemedel och självdestruktiva handlingar.
+
+Definition:
+statistisk kod för klassificering av sjukdomar och relaterade hälsoproblem
+(Socialstyrelsens termbank)
+
+Variabelnamn: Yttre orsak
+XSD attribut: Orsak | CD.CV
+kodICD10SE | [1...1]
+
+--- Tabell 12 ---
+Attribut | Beskrivning | Datatyp
+Värdeförråd | Multiplicitet
+åtgärdskod | Uppgifter om åtgärd ska spegla vilka vårdinsatser som gavs vid besöket, kontakten. Används vid uppföljning av medicinsk bedömning.
+
+Definition:
+aktivitet som är inriktad på visst resultat
+(Socialstyrelsens termbank)
+
+Variabelnamn: Åtgärdskod
+XSD attribut: Atgard | CD.CV
+kodÅTGÄRDSKOD | [1...1]
+
+--- Tabell 13 ---
+Attribut | Beskrivning | Datatyp
+Värdeförråd | Multiplicitet
+tidKontaktAkutmott | Datum och klockslag då öppenvårdskontakten påbörjades. (avser enbart kontakter på akutmottagningen)
+
+Rapporteras endast för akutmottagning med två eller fler specialiteter som är samlokaliserade. Se kap. 8 validering.
+
+Variabelnamn: Tidpunkt för öppenvårdskontakt på akutmottagning
+XSD attribut: TidStartAkut | TS
+typÅÅÅÅMMDDhhmmss | [0..1]
+tidBedömningAkutmott | Datum och klockslag då ansvarig vårdgivare utreder patienten och gör en första beslutsgrundande bedömning om eventuell fortsatt undersökning eller behandling.
+
+Rapporteras endast för akutmottagning med två eller fler specialiteter som är samlokaliserade.Se kap. 8 Validering
+
+Variabelnamn: Tidpunkt för bedömning på akutmottagning
+XSD attribut: TidBedomning | TS
+typÅÅÅÅMMDDhhmmss | [0..1]
+tidAvslutAkutmott | Datum och klockslag då öppenvårdskontakten avslutades.
+
+Rapporteras endast för akutmottagning med två eller fler specialiteter som är samlokaliserade.Se kap. 8 Validering
+
+Variabelnamn: Tidpunkt för avslut av öppenvårdskontakt på akutmottagning
+XSD attribut: TidAvslut | TS
+typÅÅÅÅMMDDhhmmss | [0..1]
+vårdAvbrutenAkutmott | Patienten avviker på eget initiativ efter läkarbedömning 
+Om vården avbrutits på annat sätt, ska fältet lämnas blankt.
+
+Rapporteras endast för akutmottagning med två eller fler specialiteter som är samlokaliserade.Se kap. 8 Validering
+
+Fasta val se tabell 7.10
+
+Variabelnamn: Avbruten vård på akutmottagning
+XSD attribut: VardAvbruten | CD.CV
+kodVÅRDAVBRUTENAKUTMOTT | [0..1]
+
+--- Tabell 14 ---
+Förkortning | Benämning | Beskrivning
+CD.CV | Coded value | Datatyp som används för att beskriva kodade värden.
+II | Instance identifier | Datatyp som används för att beskriva unika identifierare av en instans
+TS | Point in time | Datatyp som används för att beskriva tidpunkter.
+ST | String | Datatyp som används för att beskriva textsträngar.
+
+--- Tabell 15 ---
+Dokumentnamn
+Informationsmodell - Tillgänglighet inom specialiserad vård | Dokumentnamn
+Informationsmodell - Tillgänglighet inom specialiserad vård | Dokumentnamn
+Informationsmodell - Tillgänglighet inom specialiserad vård | Dokumentnamn
+Informationsmodell - Tillgänglighet inom specialiserad vård | Version
+1.1 | Version
+1.1
+Status
+Proposed | Status
+Proposed | Status
+Proposed | Status
+Proposed | Status
+Proposed | Status
+Proposed
+Dokumentansvarig
+TLK | Dokumentansvarig
+TLK | Dokumentansvarig
+TLK | Dokumentansvarig
+TLK | Dokumentansvarig
+TLK | Dokumentansvarig
+TLK
+Beslutsdatum | Beslutsdatum | Beslutsdatum | Gäller fr.o.m. | Gäller fr.o.m. | Gäller t.o.m.
+Versionshistorik | Versionshistorik | Versionshistorik | Versionshistorik | Versionshistorik | Versionshistorik
+Utgåva | Datum | Kommentar | Kommentar | Kommentar | Kommentar
+1.0 | 2020-01-28 | En första modellversion utifrån dokumentet:
+Specialiserad vård_Uppföljningsmodell_P1.0-4 UTDRA G_2019-10-30.docx | En första modellversion utifrån dokumentet:
+Specialiserad vård_Uppföljningsmodell_P1.0-4 UTDRA G_2019-10-30.docx | En första modellversion utifrån dokumentet:
+Specialiserad vård_Uppföljningsmodell_P1.0-4 UTDRA G_2019-10-30.docx | En första modellversion utifrån dokumentet:
+Specialiserad vård_Uppföljningsmodell_P1.0-4 UTDRA G_2019-10-30.docx
+1.1 | 2020-09-25 | Uppdaterad modell utifrån dokumentet
+Specialiserad vård_Uppföljningsmodell_P01.5 _2020-06-16.pdf | Uppdaterad modell utifrån dokumentet
+Specialiserad vård_Uppföljningsmodell_P01.5 _2020-06-16.pdf | Uppdaterad modell utifrån dokumentet
+Specialiserad vård_Uppföljningsmodell_P01.5 _2020-06-16.pdf | Uppdaterad modell utifrån dokumentet
+Specialiserad vård_Uppföljningsmodell_P01.5 _2020-06-16.pdf
+ |  |  |  |  | 
+ |  |  |  |  | 
+ |  |  |  |  | 
+ |  |  |  |  | 
+ |  |  |  |  | 
+
+================================================================================
+FIL: PingForConfigurationInteraction_1_0_RIVTABP21.wsdl
+================================================================================
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- 
+ Licensed to Sveriges Kommuner och Landsting under one
+ or more contributor license agreements. See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership. Sveriges Kommuner och Landsting licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied. See the License for the
+ specific language governing permissions and limitations
+ under the License.
+ -->		
+<wsdl:definitions name='PingForConfigurationInteraction' 
+xmlns:wsdl='http://schemas.xmlsoap.org/wsdl/' 
+xmlns:soap='http://schemas.xmlsoap.org/wsdl/soap/' 
+xmlns:xs='http://www.w3.org/2001/XMLSchema' 
+xmlns:riv='urn:riv:itintegration:registry:1' 
+xmlns:tjsr='urn:riv:itintegration:monitoring:PingForConfigurationResponder:1' 
+xmlns:tjsi='urn:riv:itintegration:monitoring:PingForConfigurationInitiator:1' 
+xmlns:tns='urn:riv:itintegration:monitoring:PingForConfiguration:1:rivtabp21' 
+targetNamespace='urn:riv:itintegration:monitoring:PingForConfiguration:1:rivtabp21'>
+  <wsdl:documentation>
+			 Tjänsteinteraktionens namn: PingForConfigurationInteraction
+			 Beskrivning: 
+			   A service interaction for monitoring and querying the configuration of service endpoints. 
+			   The idea is that each mosule that exposes RIV TA web services should also expose a service according to this contract.
+			   It should report the configuration (version etc) of the module/system/component. The fact that this is a well-known 
+			   service without side effects and no or insignificant resource consumption, it is also use-ful for monitoring the health
+			   of the module. If this service fails, it is likely that also the other services exposed by the same module will fail.
+			 Revisioner: 
+			 Tjänstedomän: itintegration:monitoring
+			 Tjänsteinteraktionstyp: Fråga-Svar
+			 WS-profil: RIVTABP21
+			 Förvaltas av: Center för E-hälsa i Samverkan
+  </wsdl:documentation>
+  <wsdl:types>
+    <xs:schema targetNamespace='urn:riv:itintegration:monitoring:PingForConfiguration:1:rivtabp21'>
+      <xs:import schemaLocation='PingForConfigurationResponder_1.0.xsd' namespace='urn:riv:itintegration:monitoring:PingForConfigurationResponder:1' />
+      <xs:import schemaLocation='../../core_components/itintegration_registry_1.0.xsd' namespace='urn:riv:itintegration:registry:1' />
+    </xs:schema>
+  </wsdl:types>
+  <wsdl:message name='PingForConfigurationRequest'>
+    <wsdl:part name='LogicalAddress' element='riv:LogicalAddress'>
+      <wsdl:documentation>
+        Unlike other RIVTA services, this service does not support business adressing. So any value may be passed in this header.
+      </wsdl:documentation>
+    </wsdl:part>
+    <wsdl:part name='parameters' element='tjsr:PingForConfiguration' />
+  </wsdl:message>
+  <wsdl:message name='PingForConfigurationResponse'>
+    <wsdl:part name='parameters' element='tjsr:PingForConfigurationResponse' />
+  </wsdl:message>
+  <wsdl:portType name='PingForConfigurationResponderInterface'>
+    <wsdl:operation name='PingForConfiguration'>
+      <wsdl:input message='tns:PingForConfigurationRequest' />
+      <wsdl:output message='tns:PingForConfigurationResponse' />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name='PingForConfigurationResponderBinding' type='tns:PingForConfigurationResponderInterface'>
+    <soap:binding style='document' transport='http://schemas.xmlsoap.org/soap/http' />
+    <wsdl:operation name='PingForConfiguration'>
+      <soap:operation soapAction='urn:riv:itintegration:monitoring:PingForConfigurationResponder:1:PingForConfiguration' style='document' />
+      <wsdl:input>
+        <soap:header use='literal' message='tns:PingForConfigurationRequest' part='LogicalAddress' />
+        <soap:body use='literal' parts='parameters' />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use='literal' />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name='PingForConfigurationResponderService'>
+    <wsdl:port name='PingForConfigurationResponderPort' binding='tns:PingForConfigurationResponderBinding'>
+      <soap:address location='http://tempuri.org' />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
+
+================================================================================
+FIL: PingForConfigurationResponder_1_0.xsd
+================================================================================
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- 
+ Licensed to Sveriges Kommuner och Landsting under one
+ or more contributor license agreements. See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership. Sveriges Kommuner och Landsting licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied. See the License for the
+ specific language governing permissions and limitations
+ under the License.
+ -->		
+<xs:schema  xmlns:xs='http://www.w3.org/2001/XMLSchema' 
+            xmlns:tns='urn:riv:itintegration:monitoring:PingForConfigurationResponder:1' 
+            xmlns:core='urn:riv:itintegration:monitoring:1' 
+            targetNamespace='urn:riv:itintegration:monitoring:PingForConfigurationResponder:1' 
+            elementFormDefault='qualified' 
+            attributeFormDefault='unqualified' 
+            version='1.0'>
+
+  <xs:import schemaLocation='../../core_components/itintegration_monitoring_1.0.xsd' namespace='urn:riv:itintegration:monitoring:1' />
+
+  <xs:element name='PingForConfiguration' type='tns:PingForConfigurationType' />
+  <xs:element name='PingForConfigurationResponse' type='tns:PingForConfigurationResponseType' />
+  
+  <xs:complexType name='PingForConfigurationType'>
+    <xs:sequence>
+      <xs:any namespace='##other' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+    </xs:sequence>
+  </xs:complexType>
+  
+  <xs:complexType name='PingForConfigurationResponseType'>
+    <xs:sequence>
+      <xs:element name='version' type='xs:string'>
+        <xs:annotation>
+          <xs:documentation>Version of the service component that responds.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name='pingDateTime' type='core:TS'>
+        <xs:annotation>
+          <xs:documentation>Date and time for the ping response.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="configuration" type="tns:ConfigurationType" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation>Optional list of environment information from the service component.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:any namespace='##other' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+    </xs:sequence>
+  </xs:complexType>
+  
+  <xs:complexType name="ConfigurationType">
+    <xs:annotation>
+      <xs:documentation>Example of configuration information (Named by the name element): jvm/.net version, operating system version, local system time, last start/restart</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="name" type="xs:string"/>
+      <xs:element name="value" type="xs:string"/>
+      <xs:any namespace='##other' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>
+
+================================================================================
+FIL: TillgangligVardSpeciGenomfordaInteraction_1_0_RIVTABP21.wsdl
+================================================================================
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ Licensed to ..
+ -->
+<wsdl:definitions name='TillgangligVardSpeciGenomfordaInteraction'
+                  xmlns:wsdl='http://schemas.xmlsoap.org/wsdl/' xmlns:soap='http://schemas.xmlsoap.org/wsdl/soap/'
+                  xmlns:xs='http://www.w3.org/2001/XMLSchema'
+                  xmlns:tjsr='urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciGenomfordaResponder:1'
+                  xmlns:ih='urn:riv:interoperability:headers:1'
+                  xmlns:tns='urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciGenomfordaResponder:1:rivtabp21'
+                  targetNamespace='urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciGenomfordaResponder:1:rivtabp21'
+                  xmlns:itr='urn:riv:itintegration:registry:1'>
+    <xs:annotation>
+        <xs:documentation>
+            Tjänsteinteraktionens namn: TillgangligVardSpeciGenomfordaInteraction
+            Beskrivning:
+            För inrapportering av tillgänglighet inom vården
+            Revisioner:
+            Tjänstedomän: skl:TillgangligVardSpeciGenomforda
+            Tjänsteinteraktionstyp: Fråga-Svar
+            WS-profil: RIVTABP21
+            Förvaltas av: Sveriges Kommuner och Regioner
+        </xs:documentation>
+    </xs:annotation>
+    <wsdl:types>
+        <xs:schema targetNamespace='urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciGenomfordaResponder:1:rivtabp21'>
+            <xs:import schemaLocation='TillgangligVardSpeciGenomfordaResponder_1.0.xsd' namespace='urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciGenomfordaResponder:1' />
+            <xs:import schemaLocation='../../core_components/itintegration_registry_1.0.xsd' namespace='urn:riv:itintegration:registry:1' />
+            <xs:import schemaLocation='../../core_components/interoperability_headers_1.0.xsd' namespace='urn:riv:interoperability:headers:1' />
+        </xs:schema>
+    </wsdl:types>
+    <wsdl:message name='TillgangligVardSpeciGenomfordaRequest'>
+        <wsdl:part name='parameters' element='tjsr:TillgangligVardSpeciGenomforda' />
+    </wsdl:message>
+    <wsdl:message name='TillgangligVardSpeciGenomfordaResponse'>
+        <wsdl:part name='parameters' element='tjsr:TillgangligVardSpeciGenomfordaResponse' />
+    </wsdl:message>
+    <wsdl:portType name='TillgangligVardSpeciGenomfordaResponderInterface'>
+        <wsdl:operation name='TillgangligVardSpeciGenomforda'>
+            <wsdl:input message='tns:TillgangligVardSpeciGenomfordaRequest' />
+            <wsdl:output message='tns:TillgangligVardSpeciGenomfordaResponse' />
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name='TillgangligVardSpeciGenomfordaResponderBinding' type='tns:TillgangligVardSpeciGenomfordaResponderInterface'>
+        <soap:binding style='document' transport='http://schemas.xmlsoap.org/soap/http' />
+        <wsdl:operation name='TillgangligVardSpeciGenomforda'>
+            <soap:operation soapAction='urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciGenomfordaResponder:1:TillgangligVardSpeciGenomforda' style='document' />
+            <wsdl:input>
+                <soap:body use='literal' parts='parameters' />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use='literal' />
+            </wsdl:output>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name='TillgangligVardSpeciGenomfordaResponderService'>
+        <wsdl:port name='TillgangligVardSpeciGenomfordaResponderPort' binding='tns:TillgangligVardSpeciGenomfordaResponderBinding'>
+            <soap:address location='http://tempuri.org' />
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>
+
+
+================================================================================
+FIL: TillgangligVardSpeciGenomfordaResponder_1_0.xsd
+================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+        xmlns:tns="urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciGenomfordaResponder:1"
+        targetNamespace="urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciGenomfordaResponder:1"
+        elementFormDefault="qualified"
+        attributeFormDefault="unqualified"
+        version="1.0">
+    <xsd:annotation>
+        <xsd:documentation>
+            Beskrivning: Tjänsteschema för TillgangligVardSpeciGenomfordaResponder.
+            Revisioner:
+            2019-09-20: Version 1.0
+                OBS ! Kontakt måste skickas i ett godkänt anrop innan Diagnoser, Orsaker och Åtgärder kan skickas (kontrollera att anropet lyckats via statusmailet eller via
+                    exporttjänsten för ersättningsId).
+
+                    ErsättningsId används när ett tidigare anrop behöver ersättas, all data skicka då om.
+
+                    När Diagnoser, Orsaker eller Åtgärder skickas med ersättningsId tas tidigare inrapporterad data för det ersättningsId't bort och de nya läses in.
+
+                    När Kontakter skickas med ersättningsId tas kontakter samt Diagnoser, Orsaker eller Åtgärder för dessa kontakter bort. Nya kontakter läses in.
+                    Anrop med Diagnoser, Orsaker eller Åtgärder måste göras på nytt (utan ersättningsid)
+
+                    För generell information kring inskick av data hänvisas till "sign-e_webtjanster_manual.pdf" som finns att hämta på projektplatsen.
+
+            2022-03-14: Lagt till minOccurs och maxOccurs i valet mellan att skicka Kontakt, Dignoser, Orsaker eller Åtgärder.
+                    Ändringen möjliggör anrop med tom body för att ta bort tidigare inskickad data för angivet ersättningsId.
+                    Om ersättningsId skickas utan body och det tidigare anropet innehöll kontakter kommer kontakter tas bort,
+                    samt därtill hörande diagnoser, åtgärder och orsaker.
+            2025-02-20: Lagt till AktivitetKVA och AktivitetICD
+
+        </xsd:documentation>
+    </xsd:annotation>
+
+    <xsd:element name="TillgangligVardSpeciGenomforda" type="tns:TillgangligVardSpeciGenomforda">
+        <xsd:annotation><xsd:documentation>Rotelement för inrapportering av tillgänglighet inom vården.</xsd:documentation></xsd:annotation>
+    </xsd:element>
+    <xsd:element name="TillgangligVardSpeciGenomfordaResponse" type="tns:TillgangligVardSpeciGenomfordaResponse">
+        <xsd:annotation><xsd:documentation>Rotelement för svar på inrapportering av tillgänglighet inom vården.</xsd:documentation></xsd:annotation>
+    </xsd:element>
+
+    <xsd:complexType name="TillgangligVardSpeciGenomforda">
+        <xsd:annotation><xsd:documentation>Rotelement för inrapportering av tillgänglig i vård.</xsd:documentation></xsd:annotation>
+        <xsd:choice minOccurs="0" maxOccurs="1">
+            <xsd:element type="tns:Kontakt" name="Kontakt" />
+            <xsd:element type="tns:Diagnoser" name="Diagnoser" />
+            <xsd:element type="tns:Orsaker" name="Orsaker" />
+            <xsd:element type="tns:Atgarder" name="Atgarder" />
+        </xsd:choice>
+        <xsd:attribute type="xsd:string" name="ErsattningsId">
+            <xsd:annotation>
+                <xsd:documentation>Ersättningsid används för ersättning av tidigare inrapporterad data på samma mätning.</xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute type="xsd:string" name="LeveransReferens">
+            <xsd:annotation>
+                <xsd:documentation>Referens satt av anropande system. Denna referens kommer skickas tillbaka både i det synkrona svaret och den asynkrona statusrapporten.
+                    Denna referens är endast en identifierare av det aktuella anropet och Sign-e kommer inte hantera eller lagra informationen i detta attribut.</xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:complexType name="Kontakt">
+        <xsd:annotation><xsd:documentation>Innehåller mätpunkter samt information om patientens vårdkontakt inom specialiserad vård.</xsd:documentation></xsd:annotation>
+        <xsd:sequence>
+            <xsd:element type="tns:Besok" name="Besok" maxOccurs="unbounded">
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute type="xsd:date" name="DatatGallerFor" use="required">
+            <xsd:annotation>
+                <xsd:documentation>Identifierar mätperioden. Exempelvis 2016-08-01 anropet innehåller kontakter i augusti 2016.</xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:complexType name="Besok">
+        <xsd:annotation><xsd:documentation>Innehåller besöksdata.</xsd:documentation></xsd:annotation>
+        <xsd:simpleContent>
+            <xsd:extension base="xsd:string">
+                <xsd:attribute type="tns:Regionkod" name="Regionkod" use="required">
+                    <xsd:annotation><xsd:documentation>Ange landsting/region kod</xsd:documentation></xsd:annotation>
+               </xsd:attribute>
+
+                <xsd:attribute name="HSAIdRegion" use="required">
+                    <xsd:annotation><xsd:documentation>Ange HSAId för region där vårdkontakten har skett, HSAId hösta nivå</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="2"></xsd:minLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute name="Sjukhus" use="required">
+                    <xsd:annotation><xsd:documentation>Ska registreras med hjälp av den 5- eller 6- siffriga koden i Socialstyrelsens hälso- och sjukvårdsförteckning 1992
+                        med fortlöpande kompletteringar från Socialstyrelsen. Enheter som inte kan kopplas till ett specifikt sjukhus rapporteras med 00000</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="5"></xsd:minLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute name="SjukhusNamn" use="required">
+                    <xsd:annotation><xsd:documentation>Ange namn för sjukhus. Enheter som inte kan kopplas till ett specifikt sjukhus rapporteras med Sjukhus saknas</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="2"></xsd:minLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute name="HSAIdVardgivare" use="required">
+                    <xsd:annotation><xsd:documentation>Ange HSAId för den vårdgivare som vårdenheten tillhör</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="2"></xsd:minLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute name="HSAIdVardenhet" use="required">
+                    <xsd:annotation><xsd:documentation>Ange HSAId för den klinik där vårdkontakten har skett</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="2"></xsd:minLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="HSAIdEnhet">
+                    <xsd:annotation><xsd:documentation>Ange HSAId för den enhet där vårdkontakten har skett</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+
+                <xsd:attribute name="VardkontaktId" use="required">
+                    <xsd:annotation><xsd:documentation>Ange vårdkontaktens unika id</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="2"></xsd:minLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute type="tns:JaNej" name="Vardgaranti" use="required">
+                    <xsd:annotation><xsd:documentation>Identifierar om kontakten innefattas i vårdgarantin</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:Fas" name="Fas" use="required">
+                    <xsd:annotation><xsd:documentation>Identifierar del av händelseförlopp, första besök, operation/åtgärd, undersökning, återbesök</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="Mvo" use="required">
+                    <xsd:annotation><xsd:documentation>Medicinskt verksamhetsområde anges för samtliga kontakter</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                       <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="3"></xsd:minLength>
+                            <xsd:maxLength value="3"></xsd:maxLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute name="Aktivitet">
+                    <xsd:annotation><xsd:documentation>SKL's interna åtgärdskod anges för operation/åtgärd/undersökning</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="5"></xsd:minLength>
+                            <xsd:maxLength value="5"></xsd:maxLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute name="AktivitetKVA">
+                    <xsd:annotation><xsd:documentation>Aktivitet KVÅ avser den huvudåtgärd som ligger till grund för rapporterad aktivitet</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="5"></xsd:minLength>
+                            <xsd:maxLength value="5"></xsd:maxLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute name="AktivitetICD">
+                    <xsd:annotation><xsd:documentation>Aktivitet ICD avser den diagnos som ingår i aktivitetens definition och ligger till grund för rapporterad aktivitet</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="4"></xsd:minLength>
+                            <xsd:maxLength value="6"></xsd:maxLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+
+                <xsd:attribute type="tns:GiltigaAr" name="FodelseAr" use="required">
+                    <xsd:annotation><xsd:documentation>Födelseår, patientens fördelseår</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:Kon" name="Kon" use="required">
+                    <xsd:annotation><xsd:documentation>Kön, patientens kön</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="Lkf" use="required">
+                    <xsd:annotation><xsd:documentation>Kommun, ange den kommun där patienten är folkbokförd vid tidpunkten för vårdkontakten. Saknas korrekt kod ange 0000.</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="HSAIdPatientListning">
+                    <xsd:annotation><xsd:documentation>Listning, ange HSAId för den enhet där patienten är listad vid tidpunkten för vårdskontakten</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:Bokning" name="Bokningssatt" use="required">
+                    <xsd:annotation><xsd:documentation>Bokningssätt, hur besöket bokades</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:Vardkontakt" name="Vardkontakt" use="required">
+                    <xsd:annotation><xsd:documentation>Identifierar form av vårdkontakt</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:Yrke" name="Yrkeskategori" use="required">
+                    <xsd:annotation><xsd:documentation>Yrkeskategori, den yrkeskategori som patienten träffade vid vårdkontakten</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:Avvikelse" name="Avvikelse">
+                    <xsd:annotation><xsd:documentation>Avvikelse, ange eventuell förekomst av patientvald- eller medicinskt orsakad väntan</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:GiltigtTimeStamp" name="BeslutAktivitet" use="required">
+                    <xsd:annotation><xsd:documentation>Avser tidpunkt, datum och klockslag för beslut att genomföra aktivitet.
+                        Väntetidsstart för första besök, operation, åtgärd, återbesök.
+                        För första besök anges datum för beslut att framställa vårdbegäran. För operation, åtgärd, återbesök, övriga kontakter anges beslutsdatum för aktivitet.
+                    </xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:GiltigtTimeStamp" name="StartAktivitet" use="required">
+                    <xsd:annotation><xsd:documentation>Avser tidpunkt, datum och klockslag för start av aktivitet.
+                        Väntetidsstart för vistelsetid på akutmottagning. Väntetidsslut första kontakt, operation, åtgärd, återbesök.
+                    </xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:GiltigtTimeStamp" name="MedicinsktMaldatum">
+                    <xsd:annotation><xsd:documentation>Avser tidpunkt, datum och klockslag för när öppenvårdskontakt, operation, undersökning, åtgärd senast ska genomföras</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:Akutverksamhet" name="TypAkutverksamhet" use="required">
+                    <xsd:annotation><xsd:documentation>Typ av akutverksamhet. Alla akuta besök rapporteras med något av alternativen 1-5</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:GiltigtTimeStamp" name="TidStartAkut">
+                    <xsd:annotation><xsd:documentation>Datum och klockslag då öppenvårdskontakt påbörjas (avser endast kontakter på akutmottagning)</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:GiltigtTimeStamp" name="TidBedomning">
+                    <xsd:annotation><xsd:documentation>Datum och klockslag då ansvarig vårdgivare utreder patienten och gör en första beslutsgrundande bedömning
+                        om eventuell fortsatt undersökning eller behandling</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:GiltigtTimeStamp" name="TidAvslut">
+                    <xsd:annotation><xsd:documentation>Datum och klockslag då öppenvårdskontakten avslutades.</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:Avbruten" name="VardAvbruten">
+                    <xsd:annotation><xsd:documentation>Markör för avbruten vård på akutmottagning</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+
+                <xsd:attribute type="tns:RemittentTyp" name="Remittenttyp">
+                    <xsd:annotation><xsd:documentation>Remittenttyp, hur vårdkontakten initierades med vårdgivaren</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="Remittent">
+                    <xsd:annotation><xsd:documentation>Remittent, ange HSAId för remitterande enhet</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="RemissId">
+                    <xsd:annotation><xsd:documentation>Remissens unika identifikation som skapas av uppgiftslämnaren, ska anges på alla kontakter som kan kopplas till remissen</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:GiltigtTimeStampRemiss" name="RemissDatum">
+                    <xsd:annotation><xsd:documentation>Datum för skapande remiss</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:GiltigtTimeStampRemiss" name="AnkomstDatum">
+                    <xsd:annotation><xsd:documentation>Datum för ankomst remiss</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+
+            </xsd:extension>
+        </xsd:simpleContent>
+    </xsd:complexType>
+
+    <xsd:complexType name="Diagnoser">
+        <xsd:annotation><xsd:documentation>Innehåller diagnoser.</xsd:documentation></xsd:annotation>
+        <xsd:sequence>
+            <xsd:element type="tns:Diagnos" name="Diagnos" maxOccurs="unbounded">
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute type="xsd:date" name="DatatGallerFor" use="required">
+            <xsd:annotation>
+                <xsd:documentation>Identifierar mätperioden. Exempelvis 2016-08-01 anropet innehåller information från augusti 2016.</xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:complexType name="Diagnos">
+        <xsd:annotation><xsd:documentation>ICD-10-SE och KSH97 Diagnoskoder som haft klinisk relevans för vårdkontakten</xsd:documentation></xsd:annotation>
+        <xsd:simpleContent>
+            <xsd:extension base="xsd:string">
+                <xsd:attribute type="tns:Regionkod" name="Regionkod" use="required">
+                    <xsd:annotation><xsd:documentation>Ange landsting/region kod</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="VardkontaktId" use="required">
+                    <xsd:annotation><xsd:documentation>Ange vårdkontaktens unika id</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="Diagnos" use="required">
+                    <xsd:annotation><xsd:documentation>Diagnoskod, ICD-10-SE och KSH97. Samtliga diagnoser som haft klinisk relevans för kontakten.
+                        Används vid uppföljning av medicinsk bedömning. En post per diagnos</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:DiagnosTyp" name="DiagnosTyp" use="required">
+                    <xsd:annotation><xsd:documentation>Val av huvuddiagnos, bidiagnos/-er</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+
+            </xsd:extension>
+        </xsd:simpleContent>
+    </xsd:complexType>
+
+    <xsd:complexType name="Orsaker">
+        <xsd:annotation><xsd:documentation>Innehåller orsaker</xsd:documentation></xsd:annotation>
+        <xsd:sequence>
+            <xsd:element type="tns:Orsak" name="Orsak" maxOccurs="unbounded">
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute type="xsd:date" name="DatatGallerFor" use="required">
+            <xsd:annotation>
+                <xsd:documentation>Identifierar mätperioden. Exempelvis 2016-08-01 anropet innehåller information från augusti 2016.</xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:complexType name="Orsak">
+        <xsd:annotation><xsd:documentation>Innehåller yttre orsaker ICD-10-SE.</xsd:documentation></xsd:annotation>
+        <xsd:simpleContent>
+            <xsd:extension base="xsd:string">
+                <xsd:attribute type="tns:Regionkod" name="Regionkod" use="required">
+                    <xsd:annotation><xsd:documentation>Ange landsting/region kod</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="VardkontaktId" use="required">
+                    <xsd:annotation><xsd:documentation>Ange vårdkontaktens unika id</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="Orsak" use="required">
+                    <xsd:annotation><xsd:documentation>Yttre Orsakskod ICD-10-SE. Yttre orsaker till sjukdom och död behövs för att beskriva olycksfall, vårdkomplikationer, ogynnsamma effekter av läkemedel och självdestruktiva handlingar.</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+
+            </xsd:extension>
+        </xsd:simpleContent>
+    </xsd:complexType>
+
+    <xsd:complexType name="Atgarder">
+        <xsd:annotation><xsd:documentation>Innehåller åtgärder</xsd:documentation></xsd:annotation>
+        <xsd:sequence>
+            <xsd:element type="tns:Atgard" name="Atgard" maxOccurs="unbounded">
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute type="xsd:date" name="DatatGallerFor" use="required">
+            <xsd:annotation>
+                <xsd:documentation>Identifierar mätperioden. Exempelvis 2016-08-01 anropet innehåller information från augusti 2016.</xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:complexType name="Atgard">
+        <xsd:annotation><xsd:documentation>KVÅ kod, speglar vilka vårdinsatser, åtgärder som gavs vid vårdkontakten</xsd:documentation></xsd:annotation>
+        <xsd:simpleContent>
+            <xsd:extension base="xsd:string">
+                <xsd:attribute type="tns:Regionkod" name="Regionkod" use="required">
+                    <xsd:annotation><xsd:documentation>Ange landsting/region kod</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="VardkontaktId" use="required">
+                    <xsd:annotation><xsd:documentation>Ange vårdkontaktens unika id</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="Atgard" use="required">
+                    <xsd:annotation><xsd:documentation>Årgärdskoder KVÅ. Uppgifter om åtgärd ska spegla vilka vårdinsatser som gavs vid besöket, kontakten.
+                        Används vid uppföljning av medicinsk bedömning</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+
+            </xsd:extension>
+        </xsd:simpleContent>
+    </xsd:complexType>
+
+    <xsd:simpleType name="Regionkod">
+        <xsd:annotation>
+            <xsd:documentation>Giltiga regionkoder.</xsd:documentation>
+            <xsd:documentation>10 Region Stockholm</xsd:documentation>
+            <xsd:documentation>12 Region Uppsala</xsd:documentation>
+            <xsd:documentation>13 Region Sörmland</xsd:documentation>
+            <xsd:documentation>21 Region Östergötland</xsd:documentation>
+            <xsd:documentation>22 Region Jönköpings län</xsd:documentation>
+            <xsd:documentation>23 Region Kronoberg</xsd:documentation>
+            <xsd:documentation>24 Region Kalmar län</xsd:documentation>
+            <xsd:documentation>26 Region Gotland</xsd:documentation>
+            <xsd:documentation>27 Region Blekinge</xsd:documentation>
+            <xsd:documentation>41 Region Skåne</xsd:documentation>
+            <xsd:documentation>42 Region Halland</xsd:documentation>
+            <xsd:documentation>51 Västra Götalandsregionen</xsd:documentation>
+            <xsd:documentation>54 Region Värmland</xsd:documentation>
+            <xsd:documentation>55 Region Örebro län</xsd:documentation>
+            <xsd:documentation>56 Region Västmanland</xsd:documentation>
+            <xsd:documentation>57 Region Dalarna</xsd:documentation>
+            <xsd:documentation>61 Region Gävleborg</xsd:documentation>
+            <xsd:documentation>62 Region Västernorrland</xsd:documentation>
+            <xsd:documentation>63 Region Jämtland Härjedalen</xsd:documentation>
+            <xsd:documentation>64 Region Västerbotten</xsd:documentation>
+            <xsd:documentation>65 Region Norrbotten</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="10"/>
+            <xsd:maxInclusive value="65"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="Kon">
+        <xsd:annotation><xsd:documentation>Patientens kön</xsd:documentation></xsd:annotation>
+        <xsd:restriction base="xsd:string">
+            <xsd:pattern value="2|kvinna|Kvinna|KVINNA|k|K|1|man|Man|MAN|m|M|3|okänt|Okänt|OKÄNT|o|O"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="JaNej">
+        <xsd:annotation><xsd:documentation>Sträng värde som indikerar ett positivt eller negativt värde.</xsd:documentation></xsd:annotation>
+        <xsd:restriction base="xsd:string">
+            <xsd:pattern value="1|j|J|ja|Ja|JA|t|T|true|True|TRUE|2|n|N|nej|Nej|NEJ|f|F|false|False|FALSE"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="Fas">
+        <xsd:annotation><xsd:documentation>Identifierar besök</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>1 Första kontakt</xsd:documentation>
+            <xsd:documentation>2 Operation/åtgärd</xsd:documentation>
+            <xsd:documentation>3 Undersökning</xsd:documentation>
+            <xsd:documentation>4 Återbesök</xsd:documentation>
+            <xsd:documentation>5 Akut kontakt</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="1"/>
+            <xsd:maxInclusive value="5"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="RemittentTyp">
+        <xsd:annotation><xsd:documentation>Hur kontakt initieras</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>1 Remiss</xsd:documentation>
+            <xsd:documentation>2 Privat vårdbegäran</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="1"/>
+            <xsd:maxInclusive value="2"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="Bokning">
+        <xsd:annotation><xsd:documentation>Hur besköket bokades</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>1 Bokat själv</xsd:documentation>
+            <xsd:documentation>2 Bokad/överenskommen tid</xsd:documentation>
+            <xsd:documentation>3 Bokad/erbjuden tid</xsd:documentation>
+            <xsd:documentation>4 Bokad</xsd:documentation>
+            <xsd:documentation>5 Obokad</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="1"/>
+            <xsd:maxInclusive value="5"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="Vardkontakt">
+        <xsd:annotation><xsd:documentation>Hur genomfördes kontakten</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>0 Besök på mottagning/vårdenhet där en patient möter en hälso- och sjukvårdspersonalmed självständigt behandlingsansvar</xsd:documentation>
+            <xsd:documentation>1 Besök på mottagning/vårdenhet där en patient möter ett vårdteam (teambesök)</xsd:documentation>
+            <xsd:documentation>2 Besök på mottagning/vårdenhet där flera patienter i grupp möter en hälso- och sjukvårdspersonal med självständigt behandlingsansvar (gruppbesök)</xsd:documentation>
+            <xsd:documentation>3 Besök på mottagning/vårdenhet där flera patienter i grupp möter ett vårdteam (gruppteambesök)</xsd:documentation>
+            <xsd:documentation>4 Besök i en patients bostad eller motsvarande där patienten möter en hälso- och sjukvårdspersonal med självständigt behandlingsansvar (hembesök)</xsd:documentation>
+            <xsd:documentation>5 Besök i en patients bostad eller motsvarande där patienten möter ett vårdteam</xsd:documentation>
+            <xsd:documentation>6 Besök på annan plats där en patient möter en hälso- och sjukvårdspersonal med självständigt behandlingsansvar</xsd:documentation>
+            <xsd:documentation>7 Besök på annan plats där en patient möter ett vårdteam</xsd:documentation>
+            <xsd:documentation>8 Telefon- och brevkontakter avseende kvalificerad hälso- och sjukvård</xsd:documentation>
+            <xsd:documentation>81 Distanskontakt via videolänk</xsd:documentation>
+            <xsd:documentation>82 Skriftlig distanskontakt/digitalt vårdmöte</xsd:documentation>
+            <xsd:documentation>83 Distanskontakt/digitalt vårdmöte (Används om inte 81 eller 82 kan identifieras)</xsd:documentation>
+            <xsd:documentation>91 Vårdtillfälle</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="0"/>
+            <xsd:maxInclusive value="91"/>
+        </xsd:restriction>
+   </xsd:simpleType>
+
+    <xsd:simpleType name="Yrke">
+        <xsd:annotation><xsd:documentation>Yrkeskategorier</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>XS910 Arbetsterapeut</xsd:documentation>
+            <xsd:documentation>XS911 Audionom</xsd:documentation>
+            <xsd:documentation>XS912 Dietist</xsd:documentation>
+            <xsd:documentation>XS913 Kurator</xsd:documentation>
+            <xsd:documentation>XS914 Logoped</xsd:documentation>
+            <xsd:documentation>XS915 Läkare</xsd:documentation>
+            <xsd:documentation>XS916 Ortoptist</xsd:documentation>
+            <xsd:documentation>XS917 Psykolog</xsd:documentation>
+            <xsd:documentation>XS918 Fysioterapeut/sjukgymnast</xsd:documentation>
+            <xsd:documentation>XS919 Sjuksköterska</xsd:documentation>
+            <xsd:documentation>XS920 Skötare</xsd:documentation>
+            <xsd:documentation>XS921 Undersköterska</xsd:documentation>
+            <xsd:documentation>XS922 Övriga</xsd:documentation>
+            <xsd:documentation>XS923 Naprapat</xsd:documentation>
+            <xsd:documentation>XS924 Kiropraktor</xsd:documentation>
+            <xsd:documentation>XS925 Barnmorska</xsd:documentation>
+            <xsd:documentation>XS926 Optiker</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:string">
+            <xsd:pattern value="XS910|XS911|XS912|XS913|XS914|XS915|XS916|XS917|XS918|XS919|XS920|XS921|XS922|XS923|XS924|XS925|XS926"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="Avvikelse">
+        <xsd:annotation><xsd:documentation>Patientvald- eller medicinskt orsakad väntan</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>1 Patientvald väntan</xsd:documentation>
+            <xsd:documentation>2 Medicinskt orsakad väntan</xsd:documentation>
+            <xsd:documentation>3 Särskilt orsakad väntan</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="1"/>
+            <xsd:maxInclusive value="3"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="Akutverksamhet">
+        <xsd:annotation><xsd:documentation>Typ av akutverksamhet</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>0 Ej akutverksamhet</xsd:documentation>
+            <xsd:documentation>1 Akutmottagning med två eller fler somatiska specialiteter som är samlokaliserade</xsd:documentation>
+            <xsd:documentation>2 Akutmottagning med endast en somatisk specialitet</xsd:documentation>
+            <xsd:documentation>3 Psykiatrisk akutmottagning (anges även om mottagningen är samlokaliserad med annan specialitet)</xsd:documentation>
+            <xsd:documentation>4 Närakut eller närsjukhus med jourmottagning</xsd:documentation>
+            <xsd:documentation>5 Övrig akutverksamhet</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="0"/>
+            <xsd:maxInclusive value="5"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="Avbruten">
+        <xsd:annotation><xsd:documentation>Avbruten vård på akutmottagning</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>1 Patienten avviker på eget initiativ efter läkarbedömning</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="1"/>
+            <xsd:maxInclusive value="1"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="DiagnosTyp">
+        <xsd:annotation><xsd:documentation>Definierar huvuddiagnos, bidiagnos/-er</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>1 Huvuddiagnos Det tillstånd som är den huvudsakliga anledningen till en vårdkontakt, fastställd vid vårdkontaktens slut</xsd:documentation>
+            <xsd:documentation>0 Bidiagnos Annat tillstånd än huvuddiagnos som blivit föremål för bedömning, utredning eller behandling under en vårdkontakt</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="0"/>
+            <xsd:maxInclusive value="1"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="GiltigaAr">
+        <xsd:annotation><xsd:documentation>Giltiga år är från 1901, anges i format 'åååå'.</xsd:documentation></xsd:annotation>
+        <xsd:restriction base="xsd:gYear" >
+            <xsd:minInclusive value="1901"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="GiltigtTimeStamp">
+        <xsd:annotation><xsd:documentation>Giltiga timestamp som är senare är 2010-01-01.</xsd:documentation></xsd:annotation>
+        <xsd:restriction base="xsd:dateTime">
+            <xsd:minInclusive value="2010-01-01T00:00:00"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="GiltigtTimeStampRemiss">
+        <xsd:annotation><xsd:documentation>Giltiga timestamp som är senare är 1900-01-01.</xsd:documentation></xsd:annotation>
+        <xsd:restriction base="xsd:dateTime">
+            <xsd:minInclusive value="1900-01-01T00:00:00"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:complexType name="TillgangligVardSpeciGenomfordaResponse">
+        <xsd:annotation><xsd:documentation>Rotelement för svarsmeddelandet.</xsd:documentation></xsd:annotation>
+        <xsd:sequence>
+            <xsd:element name="Meddelande" type="xsd:string" >
+                <xsd:annotation><xsd:documentation>Meddelandetext för information om lyckad leverans.</xsd:documentation></xsd:annotation>
+            </xsd:element>
+            <xsd:element name="ErsattningsId" type="xsd:string" >
+                <xsd:annotation><xsd:documentation>'ErsattningsId' för leverans. Se "interworking" dokumentation för mer information.</xsd:documentation></xsd:annotation>
+            </xsd:element>
+            <xsd:element name="LeveransReferens" type="xsd:string" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>Om anropandesystem angav en referens för anropet returneras det värdet i denna tagg.</xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+</xsd:schema>
+
+
+================================================================================
+FIL: TillgangligVardSpeciVantandeInteraction_1_0_RIVTABP21.wsdl
+================================================================================
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ Licensed to ..
+ -->
+<wsdl:definitions name='TillgangligVardSpeciVantandeInteraction'
+                  xmlns:wsdl='http://schemas.xmlsoap.org/wsdl/' xmlns:soap='http://schemas.xmlsoap.org/wsdl/soap/'
+                  xmlns:xs='http://www.w3.org/2001/XMLSchema'
+                  xmlns:tjsr='urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciVantandeResponder:1'
+                  xmlns:ih='urn:riv:interoperability:headers:1'
+                  xmlns:tns='urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciVantandeResponder:1:rivtabp21'
+                  targetNamespace='urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciVantandeResponder:1:rivtabp21'
+                  xmlns:itr='urn:riv:itintegration:registry:1'>
+    <xs:annotation>
+        <xs:documentation>
+            Tjänsteinteraktionens namn: TillgangligVardSpeciVantandeInteraction
+            Beskrivning:
+            För inrapportering av tillgänglighet inom vården
+            Revisioner:
+            Tjänstedomän: skl:TillgangligVardSpeciVantande
+            Tjänsteinteraktionstyp: Fråga-Svar
+            WS-profil: RIVTABP21
+            Förvaltas av: Sveriges Kommuner och Regioner
+        </xs:documentation>
+    </xs:annotation>
+    <wsdl:types>
+        <xs:schema targetNamespace='urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciVantandeResponder:1:rivtabp21'>
+            <xs:import schemaLocation='TillgangligVardSpeciVantandeResponder_1.0.xsd' namespace='urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciVantandeResponder:1' />
+            <xs:import schemaLocation='../../core_components/itintegration_registry_1.0.xsd' namespace='urn:riv:itintegration:registry:1' />
+            <xs:import schemaLocation='../../core_components/interoperability_headers_1.0.xsd' namespace='urn:riv:interoperability:headers:1' />
+        </xs:schema>
+    </wsdl:types>
+    <wsdl:message name='TillgangligVardSpeciVantandeRequest'>
+        <wsdl:part name='parameters' element='tjsr:TillgangligVardSpeciVantande' />
+    </wsdl:message>
+    <wsdl:message name='TillgangligVardSpeciVantandeResponse'>
+        <wsdl:part name='parameters' element='tjsr:TillgangligVardSpeciVantandeResponse' />
+    </wsdl:message>
+    <wsdl:portType name='TillgangligVardSpeciVantandeResponderInterface'>
+        <wsdl:operation name='TillgangligVardSpeciVantande'>
+            <wsdl:input message='tns:TillgangligVardSpeciVantandeRequest' />
+            <wsdl:output message='tns:TillgangligVardSpeciVantandeResponse' />
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name='TillgangligVardSpeciVantandeResponderBinding' type='tns:TillgangligVardSpeciVantandeResponderInterface'>
+        <soap:binding style='document' transport='http://schemas.xmlsoap.org/soap/http' />
+        <wsdl:operation name='TillgangligVardSpeciVantande'>
+            <soap:operation soapAction='urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciVantandeResponder:1:TillgangligVardSpeciVantande' style='document' />
+            <wsdl:input>
+                <soap:body use='literal' parts='parameters' />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use='literal' />
+            </wsdl:output>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name='TillgangligVardSpeciVantandeResponderService'>
+        <wsdl:port name='TillgangligVardSpeciVantandeResponderPort' binding='tns:TillgangligVardSpeciVantandeResponderBinding'>
+            <soap:address location='http://tempuri.org' />
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>
+
+
+================================================================================
+FIL: TillgangligVardSpeciVantandeResponder_1_0.xsd
+================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+        xmlns:tns="urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciVantandeResponder:1"
+        targetNamespace="urn:riv:skl:tillgangligVardSpeci:TillgangligVardSpeciVantandeResponder:1"
+        elementFormDefault="qualified"
+        attributeFormDefault="unqualified"
+        version="1.0">
+    <xsd:annotation>
+        <xsd:documentation>
+            Beskrivning: Tjänsteschema för TillgangligVardSpeciVantandeResponder.
+            Revisioner:
+            2019-09-20: Version 1.0
+
+            2022-03-14: Lagt till minOccurs och maxOccurs i tagen choice med valet Kontakt.
+                        Ändringen möjliggör anrop med tom body för att ta bort tidigare inskickad data för angivet ersättningsId.
+            2025-02-20: Lagt till AktivitetKVA och AktivitetICD
+
+        </xsd:documentation>
+    </xsd:annotation>
+
+    <xsd:element name="TillgangligVardSpeciVantande" type="tns:TillgangligVardSpeciVantande">
+        <xsd:annotation><xsd:documentation>Rotelement för inrapportering av tillgänglighet inom vården.</xsd:documentation></xsd:annotation>
+    </xsd:element>
+    <xsd:element name="TillgangligVardSpeciVantandeResponse" type="tns:TillgangligVardSpeciVantandeResponse">
+        <xsd:annotation><xsd:documentation>Rotelement för svar på inrapportering av tillgänglighet inom vården.</xsd:documentation></xsd:annotation>
+    </xsd:element>
+
+    <xsd:complexType name="TillgangligVardSpeciVantande">
+        <xsd:annotation><xsd:documentation>Rotelement för inrapportering av tillgänglig i vård.</xsd:documentation></xsd:annotation>
+        <xsd:choice minOccurs="0" maxOccurs="1">
+            <xsd:element type="tns:Kontakt" name="Kontakt" />
+         </xsd:choice>
+        <xsd:attribute type="xsd:string" name="ErsattningsId">
+            <xsd:annotation>
+                <xsd:documentation>Ersättningsid används för ersättning av tidigare inrapporterad data på samma mätning.</xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute type="xsd:string" name="LeveransReferens">
+            <xsd:annotation>
+                <xsd:documentation>Referens satt av anropande system. Denna referens kommer skickas tillbaka både i det synkrona svaret och den asynkrona statusrapporten.
+                    Denna referens är endast en identifierare av det aktuella anropet och Sign-e kommer inte hantera eller lagra informationen i detta attribut.</xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:complexType name="Kontakt">
+        <xsd:annotation><xsd:documentation>Innehåller mätpunkter samt information om patientens vårdkontakt inom specialiserad vård.</xsd:documentation></xsd:annotation>
+        <xsd:sequence>
+            <xsd:element type="tns:Besok" name="Besok" maxOccurs="unbounded">
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute type="xsd:date" name="DatatGallerFor" use="required">
+            <xsd:annotation>
+                <xsd:documentation>Identifierar mätperioden. Exempelvis 2016-08-01 anropet innehåller kontakter i augusti 2016.</xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:complexType name="Besok">
+        <xsd:annotation><xsd:documentation>Innehåller planerade kontakter</xsd:documentation></xsd:annotation>
+        <xsd:simpleContent>
+            <xsd:extension base="xsd:string">
+                <xsd:attribute type="tns:Regionkod" name="Regionkod" use="required">
+                    <xsd:annotation><xsd:documentation>Ange landsting/region kod</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+
+                <xsd:attribute name="HSAIdRegion" use="required">
+                    <xsd:annotation><xsd:documentation>Ange HSAId för region där vårdkontakten har skett, HSAId hösta nivå</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="2"></xsd:minLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute name="Sjukhus">
+                    <xsd:annotation><xsd:documentation>Ska registreras med hjälp av den 5- eller 6- siffriga koden i Socialstyrelsens hälso- och sjukvårdsförteckning 1992
+                        med fortlöpande kompletteringar från Socialstyrelsen.</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="5"></xsd:minLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute name="SjukhusNamn">
+                    <xsd:annotation><xsd:documentation>Ange namn för sjukhus</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="2"></xsd:minLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute name="HSAIdVardgivare" use="required">
+                    <xsd:annotation><xsd:documentation>Ange HSAId för den vårdgivare som vårdenheten tillhör</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="2"></xsd:minLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute name="HSAIdVardenhet" use="required">
+                    <xsd:annotation><xsd:documentation>Ange HSAId för den klinik där vårdkontakten har skett</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="2"></xsd:minLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="HSAIdEnhet">
+                    <xsd:annotation><xsd:documentation>Ange HSAId för den enhet där vårdkontakten har skett</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+
+                <xsd:attribute name="VardkontaktId" use="required">
+                    <xsd:annotation><xsd:documentation>Ange vårdkontaktens unika id</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="2"></xsd:minLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute type="tns:JaNej" name="Vardgaranti" use="required">
+                    <xsd:annotation><xsd:documentation>Identifierar om kontakten innefattas i vårdgarantin</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:Fas" name="Fas" use="required">
+                    <xsd:annotation><xsd:documentation>Identifierar del av händelseförlopp, första besök, operation/åtgärd, undersökning, återbesök</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="Mvo" use="required">
+                    <xsd:annotation><xsd:documentation>Medicinskt verksamhetsområde anges för samtliga kontakter</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="3"></xsd:minLength>
+                            <xsd:maxLength value="3"></xsd:maxLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute name="Aktivitet">
+                    <xsd:annotation><xsd:documentation>SKL's interna åtgärdskod anges för operation/åtgärd/undersökning</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="5"></xsd:minLength>
+                            <xsd:maxLength value="5"></xsd:maxLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute name="AktivitetKVA">
+                    <xsd:annotation><xsd:documentation>Aktivitet KVÅ avser den huvudåtgärd som ligger till grund för rapporterad aktivitet</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="5"></xsd:minLength>
+                            <xsd:maxLength value="5"></xsd:maxLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+                <xsd:attribute name="AktivitetICD">
+                    <xsd:annotation><xsd:documentation>Aktivitet ICD avser den diagnos som ingår i aktivitetens definition och ligger till grund för rapporterad aktivitet</xsd:documentation></xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:minLength value="4"></xsd:minLength>
+                            <xsd:maxLength value="6"></xsd:maxLength>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:attribute>
+
+                <xsd:attribute type="tns:GiltigaAr" name="FodelseAr" use="required">
+                    <xsd:annotation><xsd:documentation>Födelseår, patientens fördelseår</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:Kon" name="Kon" use="required">
+                    <xsd:annotation><xsd:documentation>Kön, patientens kön</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="Lkf" use="required">
+                    <xsd:annotation><xsd:documentation>Kommun, ange den kommun där patienten är folkbokförd vid tidpunkten för vårdkontakten. Saknas korrekt kod ange 0000.</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="HSAIdPatientListning">
+                    <xsd:annotation><xsd:documentation>Listning, ange HSAId för den enhet där patienten är listad vid tidpunkten för vårdskontakten</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:Bokning" name="Bokningssatt" use="required">
+                    <xsd:annotation><xsd:documentation>Bokningssätt, hur besöket bokades</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:Vardkontakt" name="Vardkontakt" use="required">
+                    <xsd:annotation><xsd:documentation>Identifierar form av vårdkontakt</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:Yrke" name="Yrkeskategori" use="required">
+                    <xsd:annotation><xsd:documentation>Yrkeskategori, den yrkeskategori som patienten träffade vid vårdkontakten</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:Avvikelse" name="Avvikelse">
+                    <xsd:annotation><xsd:documentation>Avvikelse, ange eventuell förekomst av patientvald- eller medicinskt orsakad väntan</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:GiltigtTimeStamp" name="BeslutAktivitet" use="required">
+                    <xsd:annotation><xsd:documentation>Avser tidpunkt, datum och klockslag för beslut att genomföra aktivitet.
+                        Väntetidsstart för första besök, operation, åtgärd, återbesök.
+                        För första besök anges datum för beslut att framställa vårdbegäran. För operation, åtgärd, återbesök, övriga kontakter anges beslutsdatum för aktivitet.
+                    </xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:GiltigtTimeStamp" name="MedicinsktMaldatum">
+                    <xsd:annotation><xsd:documentation>Avser tidpunkt, datum och klockslag för när öppenvårdskontakt, operation, undersökning, åtgärd senast ska genomföras</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+
+                <xsd:attribute type="tns:RemittentTyp" name="Remittenttyp">
+                    <xsd:annotation><xsd:documentation>Remittenttyp, hur vårdkontakten initierades med vårdgivaren</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="Remittent">
+                    <xsd:annotation><xsd:documentation>Remittent, ange HSAId för remitterande enhet</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="xsd:string" name="RemissId">
+                    <xsd:annotation><xsd:documentation>Remissens unika identifikation som skapas av uppgiftslämnaren, ska anges på alla kontakter som kan kopplas till remissen</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:GiltigtTimeStampRemiss" name="RemissDatum">
+                    <xsd:annotation><xsd:documentation>Datum för skapande remiss</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute type="tns:GiltigtTimeStampRemiss" name="AnkomstDatum">
+                    <xsd:annotation><xsd:documentation>Datum för ankomst remiss</xsd:documentation></xsd:annotation>
+                </xsd:attribute>
+
+            </xsd:extension>
+        </xsd:simpleContent>
+    </xsd:complexType>
+
+    <xsd:simpleType name="Regionkod">
+        <xsd:annotation>
+            <xsd:documentation>Giltiga regionkoder.</xsd:documentation>
+            <xsd:documentation>10 Region Stockholm</xsd:documentation>
+            <xsd:documentation>12 Region Uppsala</xsd:documentation>
+            <xsd:documentation>13 Region Sörmland</xsd:documentation>
+            <xsd:documentation>21 Region Östergötland</xsd:documentation>
+            <xsd:documentation>22 Region Jönköpings län</xsd:documentation>
+            <xsd:documentation>23 Region Kronoberg</xsd:documentation>
+            <xsd:documentation>24 Region Kalmar län</xsd:documentation>
+            <xsd:documentation>26 Region Gotland</xsd:documentation>
+            <xsd:documentation>27 Region Blekinge</xsd:documentation>
+            <xsd:documentation>41 Region Skåne</xsd:documentation>
+            <xsd:documentation>42 Region Halland</xsd:documentation>
+            <xsd:documentation>51 Västra Götalandsregionen</xsd:documentation>
+            <xsd:documentation>54 Region Värmland</xsd:documentation>
+            <xsd:documentation>55 Region Örebro län</xsd:documentation>
+            <xsd:documentation>56 Region Västmanland</xsd:documentation>
+            <xsd:documentation>57 Region Dalarna</xsd:documentation>
+            <xsd:documentation>61 Region Gävleborg</xsd:documentation>
+            <xsd:documentation>62 Region Västernorrland</xsd:documentation>
+            <xsd:documentation>63 Region Jämtland Härjedalen</xsd:documentation>
+            <xsd:documentation>64 Region Västerbotten</xsd:documentation>
+            <xsd:documentation>65 Region Norrbotten</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="10"/>
+            <xsd:maxInclusive value="65"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="Kon">
+        <xsd:annotation><xsd:documentation>Patientens kön</xsd:documentation></xsd:annotation>
+        <xsd:restriction base="xsd:string">
+            <xsd:pattern value="2|kvinna|Kvinna|KVINNA|k|K|1|man|Man|MAN|m|M|3|okänt|Okänt|OKÄNT|o|O"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="JaNej">
+        <xsd:annotation><xsd:documentation>Sträng värde som indikerar ett positivt eller negativt värde.</xsd:documentation></xsd:annotation>
+        <xsd:restriction base="xsd:string">
+            <xsd:pattern value="1|j|J|ja|Ja|JA|t|T|true|True|TRUE|2|n|N|nej|Nej|NEJ|f|F|false|False|FALSE"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="Fas">
+        <xsd:annotation><xsd:documentation>Identifierar besök</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>1 Första kontakt</xsd:documentation>
+            <xsd:documentation>2 Operation/åtgärd</xsd:documentation>
+            <xsd:documentation>3 Undersökning</xsd:documentation>
+            <xsd:documentation>4 Återbesök</xsd:documentation>
+            <xsd:documentation>5 Akut kontakt</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="1"/>
+            <xsd:maxInclusive value="5"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="RemittentTyp">
+        <xsd:annotation><xsd:documentation>Hur kontakt initieras</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>1 Remiss</xsd:documentation>
+            <xsd:documentation>2 Privat vårdbegäran</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="1"/>
+            <xsd:maxInclusive value="2"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="Bokning">
+        <xsd:annotation><xsd:documentation>Hur besköket bokades</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>1 Bokat själv</xsd:documentation>
+            <xsd:documentation>2 Bokad/överenskommen tid</xsd:documentation>
+            <xsd:documentation>3 Bokad/erbjuden tid</xsd:documentation>
+            <xsd:documentation>4 Bokad</xsd:documentation>
+            <xsd:documentation>5 Obokad</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="1"/>
+            <xsd:maxInclusive value="5"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="Vardkontakt">
+        <xsd:annotation><xsd:documentation>Hur genomfördes kontakten</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>0 Besök på mottagning/vårdenhet där en patient möter en hälso- och sjukvårdspersonalmed självständigt behandlingsansvar</xsd:documentation>
+            <xsd:documentation>1 Besök på mottagning/vårdenhet där en patient möter ett vårdteam (teambesök)</xsd:documentation>
+            <xsd:documentation>2 Besök på mottagning/vårdenhet där flera patienter i grupp möter en hälso- och sjukvårdspersonal med självständigt behandlingsansvar (gruppbesök)</xsd:documentation>
+            <xsd:documentation>3 Besök på mottagning/vårdenhet där flera patienter i grupp möter ett vårdteam (gruppteambesök)</xsd:documentation>
+            <xsd:documentation>4 Besök i en patients bostad eller motsvarande där patienten möter en hälso- och sjukvårdspersonal med självständigt behandlingsansvar (hembesök)</xsd:documentation>
+            <xsd:documentation>5 Besök i en patients bostad eller motsvarande där patienten möter ett vårdteam</xsd:documentation>
+            <xsd:documentation>6 Besök på annan plats där en patient möter en hälso- och sjukvårdspersonal med självständigt behandlingsansvar</xsd:documentation>
+            <xsd:documentation>7 Besök på annan plats där en patient möter ett vårdteam</xsd:documentation>
+            <xsd:documentation>8 Telefon- och brevkontakter avseende kvalificerad hälso- och sjukvård</xsd:documentation>
+            <xsd:documentation>81 Distanskontakt via videolänk</xsd:documentation>
+            <xsd:documentation>82 Skriftlig distanskontakt/digitalt vårdmöte</xsd:documentation>
+            <xsd:documentation>83 Distanskontakt/digitalt vårdmöte (Används om inte 81 eller 82 kan identifieras)</xsd:documentation>
+            <xsd:documentation>91 Vårdtillfälle</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="0"/>
+            <xsd:maxInclusive value="91"/>
+        </xsd:restriction>
+   </xsd:simpleType>
+
+    <xsd:simpleType name="Yrke">
+        <xsd:annotation><xsd:documentation>Yrkeskategorier</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>XS910 Arbetsterapeut</xsd:documentation>
+            <xsd:documentation>XS911 Audionom</xsd:documentation>
+            <xsd:documentation>XS912 Dietist</xsd:documentation>
+            <xsd:documentation>XS913 Kurator</xsd:documentation>
+            <xsd:documentation>XS914 Logoped</xsd:documentation>
+            <xsd:documentation>XS915 Läkare</xsd:documentation>
+            <xsd:documentation>XS916 Ortoptist</xsd:documentation>
+            <xsd:documentation>XS917 Psykolog</xsd:documentation>
+            <xsd:documentation>XS918 Fysioterapeut/sjukgymnast</xsd:documentation>
+            <xsd:documentation>XS919 Sjuksköterska</xsd:documentation>
+            <xsd:documentation>XS920 Skötare</xsd:documentation>
+            <xsd:documentation>XS921 Undersköterska</xsd:documentation>
+            <xsd:documentation>XS922 Övriga</xsd:documentation>
+            <xsd:documentation>XS923 Naprapat</xsd:documentation>
+            <xsd:documentation>XS924 Kiropraktor</xsd:documentation>
+            <xsd:documentation>XS925 Barnmorska</xsd:documentation>
+            <xsd:documentation>XS926 Optiker</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:string">
+            <xsd:pattern value="XS910|XS911|XS912|XS913|XS914|XS915|XS916|XS917|XS918|XS919|XS920|XS921|XS922|XS923|XS924|XS925|XS926"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="Avvikelse">
+        <xsd:annotation><xsd:documentation>Patientvald- eller medicinskt orsakad väntan</xsd:documentation>
+            <xsd:documentation>Giltiga värden.</xsd:documentation>
+            <xsd:documentation>1 Patientvald väntan</xsd:documentation>
+            <xsd:documentation>2 Medicinskt orsakad väntan</xsd:documentation>
+            <xsd:documentation>3 Särskilt orsakad väntan</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:int">
+            <xsd:minInclusive value="1"/>
+            <xsd:maxInclusive value="3"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="GiltigaAr">
+        <xsd:annotation><xsd:documentation>Giltiga år är från 1901, anges i format 'åååå'.</xsd:documentation></xsd:annotation>
+        <xsd:restriction base="xsd:gYear" >
+            <xsd:minInclusive value="1901"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="GiltigtTimeStamp">
+        <xsd:annotation><xsd:documentation>Giltiga timestamp som är senare är 2010-01-01.</xsd:documentation></xsd:annotation>
+        <xsd:restriction base="xsd:dateTime">
+            <xsd:minInclusive value="2010-01-01T00:00:00"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="GiltigtTimeStampRemiss">
+        <xsd:annotation><xsd:documentation>Giltiga timestamp som är senare är 1900-01-01.</xsd:documentation></xsd:annotation>
+        <xsd:restriction base="xsd:dateTime">
+            <xsd:minInclusive value="1900-01-01T00:00:00"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+
+    <xsd:complexType name="TillgangligVardSpeciVantandeResponse">
+        <xsd:annotation><xsd:documentation>Rotelement för svarsmeddelandet.</xsd:documentation></xsd:annotation>
+        <xsd:sequence>
+            <xsd:element name="Meddelande" type="xsd:string" >
+                <xsd:annotation><xsd:documentation>Meddelandetext för information om lyckad leverans.</xsd:documentation></xsd:annotation>
+            </xsd:element>
+            <xsd:element name="ErsattningsId" type="xsd:string" >
+                <xsd:annotation><xsd:documentation>'ErsattningsId' för leverans. Se "interworking" dokumentation för mer information.</xsd:documentation></xsd:annotation>
+            </xsd:element>
+            <xsd:element name="LeveransReferens" type="xsd:string" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>Om anropandesystem angav en referens för anropet returneras det värdet i denna tagg.</xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+</xsd:schema>
+
+
+================================================================================
+FIL: interoperability_headers_1_0.xsd
+================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements. See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership. Sveriges Kommuner och Landsting licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied. See the License for the
+ specific language governing permissions and limitations
+ under the License.
+ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="urn:riv:interoperability:headers:1" targetNamespace="urn:riv:interoperability:headers:1" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+
+	<xs:element name="Actor" type="tns:ActorType" />
+	
+	<xs:complexType name="ActorType">
+		<xs:sequence>
+			<xs:element name="actorId" type="tns:ActorIdType"/>
+			<xs:element name="actorType" type="tns:ActorTypeEnum"/>
+			<xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:simpleType name="ActorIdType">
+		<xs:restriction base="xs:string"/>
+	</xs:simpleType>
+	
+	<xs:simpleType name="ActorTypeEnum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="subject_of_care"/>
+			<xs:enumeration value="subject_of_care_agent"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>
+
+
+================================================================================
+FIL: interoperability_headers_1_0_1_.xsd
+================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements. See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership. Sveriges Kommuner och Landsting licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied. See the License for the
+ specific language governing permissions and limitations
+ under the License.
+ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="urn:riv:interoperability:headers:1" targetNamespace="urn:riv:interoperability:headers:1" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+
+	<xs:element name="Actor" type="tns:ActorType" />
+	
+	<xs:complexType name="ActorType">
+		<xs:sequence>
+			<xs:element name="actorId" type="tns:ActorIdType"/>
+			<xs:element name="actorType" type="tns:ActorTypeEnum"/>
+			<xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:simpleType name="ActorIdType">
+		<xs:restriction base="xs:string"/>
+	</xs:simpleType>
+	
+	<xs:simpleType name="ActorTypeEnum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="subject_of_care"/>
+			<xs:enumeration value="subject_of_care_agent"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>
+
+
+================================================================================
+FIL: itintegration_registry_1_0.xsd
+================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema 
+	xmlns="urn:riv:itintegration:registry:1" 
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	targetNamespace="urn:riv:itintegration:registry:1" 
+	elementFormDefault="qualified"
+	version="1.0">
+	
+	<xs:annotation>
+		<xs:documentation>
+			Beskrivning: 	Grundläggande informationsobjekt för domänen itintegration:registry (adressering av tjänster)
+			
+			Revisionshistorik: 2011-06-27 Mats Ekhammar, Callista Enterprise AB
+				Added ServiceContractType
+			
+			Datum:			2011-05-04
+			Beskrivning:	Initial version
+			Författare:		marcus.krantz@callistaenterprise.se
+		</xs:documentation>
+	</xs:annotation>
+	
+	<xs:element name="LogicalAddress" type="LogicalAddressType" />
+	<xs:element name="ServiceContract" type="ServiceContractType" />
+	
+	<xs:simpleType name="LogicalAddressType">
+		<xs:annotation>
+			<xs:documentation>
+				Defines the type for logical address according to national reference architecture.
+				Superseeds wsa:To as type for logical address header in RIVTA 2.1. 
+			</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string" />
+	</xs:simpleType>
+	
+	<xs:complexType name='ServiceContractType'>
+		<xs:annotation>
+			<xs:documentation>
+				Type which describes a service contract. Used in interaction GetSupportedServiceContracts.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name='ServiceContractNamespace' type='xs:anyURI' />
+			<xs:any namespace='##other' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+		</xs:sequence>
+	</xs:complexType>
+	
+</xs:schema>
+
+
+================================================================================
+FIL: itintegration_registry_1_0_1_.xsd
+================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema 
+	xmlns="urn:riv:itintegration:registry:1" 
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	targetNamespace="urn:riv:itintegration:registry:1" 
+	elementFormDefault="qualified"
+	version="1.0">
+	
+	<xs:annotation>
+		<xs:documentation>
+			Beskrivning: 	Grundläggande informationsobjekt för domänen itintegration:registry (adressering av tjänster)
+			
+			Revisionshistorik: 2011-06-27 Mats Ekhammar, Callista Enterprise AB
+				Added ServiceContractType
+			
+			Datum:			2011-05-04
+			Beskrivning:	Initial version
+			Författare:		marcus.krantz@callistaenterprise.se
+		</xs:documentation>
+	</xs:annotation>
+	
+	<xs:element name="LogicalAddress" type="LogicalAddressType" />
+	<xs:element name="ServiceContract" type="ServiceContractType" />
+	
+	<xs:simpleType name="LogicalAddressType">
+		<xs:annotation>
+			<xs:documentation>
+				Defines the type for logical address according to national reference architecture.
+				Superseeds wsa:To as type for logical address header in RIVTA 2.1. 
+			</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string" />
+	</xs:simpleType>
+	
+	<xs:complexType name='ServiceContractType'>
+		<xs:annotation>
+			<xs:documentation>
+				Type which describes a service contract. Used in interaction GetSupportedServiceContracts.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name='ServiceContractNamespace' type='xs:anyURI' />
+			<xs:any namespace='##other' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+		</xs:sequence>
+	</xs:complexType>
+	
+</xs:schema>
