@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Hl7.Fhir.Model;
 
 namespace KchdFhirSerializer;
@@ -306,9 +309,9 @@ public static class MeasureReportBuilder
     }
 
     /// <summary>Population för stratum-nivå.</summary>
-    private static MeasureReport.StratumPopulationComponent MakeStratPop(string code, int count)
+    private static MeasureReport.StratifierGroupPopulationComponent MakeStratPop(string code, int count)
     {
-        return new MeasureReport.StratumPopulationComponent
+        return new MeasureReport.StratifierGroupPopulationComponent
         {
             Code = new CodeableConcept(
                 "http://terminology.hl7.org/CodeSystem/measure-population", code),

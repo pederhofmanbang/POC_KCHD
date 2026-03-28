@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Odbc;
+using System.IO;
 using System.Text;
 
 namespace KchdFhirSerializer;
