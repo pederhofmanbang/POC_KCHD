@@ -159,12 +159,12 @@ public static class MeasureReportBuilder
                 Code = { new CodeableConcept { Coding = { new Coding { Code = "kon" } } } },
                 Stratum =
                 {
-                    new MeasureReport.StratumComponent
+                    new MeasureReport.StratifierGroupComponent
                     {
                         Value = new CodeableConcept { Coding = { new Coding { Code = "1", Display = "Man" } } },
                         Population = { MakeStratPop("initial-population", man.Value) }
                     },
-                    new MeasureReport.StratumComponent
+                    new MeasureReport.StratifierGroupComponent
                     {
                         Value = new CodeableConcept { Coding = { new Coding { Code = "2", Display = "Kvinna" } } },
                         Population = { MakeStratPop("initial-population", kvinna.Value) }
@@ -174,7 +174,7 @@ public static class MeasureReportBuilder
         }
 
         // Åldersgrupp
-        var ageStrata = new List<MeasureReport.StratumComponent>();
+        var ageStrata = new List<MeasureReport.StratifierGroupComponent>();
         foreach (var (col, label) in new[]
         {
             ("strat_age_under_50", "<50"), ("strat_age_50_64", "50-64"),
@@ -185,7 +185,7 @@ public static class MeasureReportBuilder
             var v = SafeInt(Get(t, col));
             if (v.HasValue)
             {
-                ageStrata.Add(new MeasureReport.StratumComponent
+                ageStrata.Add(new MeasureReport.StratifierGroupComponent
                 {
                     Value = new CodeableConcept { Coding = { new Coding { Code = label } } },
                     Population = { MakeStratPop("initial-population", v.Value) }
@@ -202,7 +202,7 @@ public static class MeasureReportBuilder
         }
 
         // Väntetidsintervall
-        var vtStrata = new List<MeasureReport.StratumComponent>();
+        var vtStrata = new List<MeasureReport.StratifierGroupComponent>();
         foreach (var (col, label) in new[]
         {
             ("strat_vt_0_30", "0-30"), ("strat_vt_31_60", "31-60"),
@@ -213,7 +213,7 @@ public static class MeasureReportBuilder
             var v = SafeInt(Get(t, col));
             if (v.HasValue)
             {
-                vtStrata.Add(new MeasureReport.StratumComponent
+                vtStrata.Add(new MeasureReport.StratifierGroupComponent
                 {
                     Value = new CodeableConcept { Coding = { new Coding { Code = label } } },
                     Population = { MakeStratPop("initial-population", v.Value) }
@@ -236,11 +236,11 @@ public static class MeasureReportBuilder
     private static MeasureReport.StratifierComponent BuildDimensionStratifier(
         string dimensionType, List<Dictionary<string, string>> dimRows)
     {
-        var strata = new List<MeasureReport.StratumComponent>();
+        var strata = new List<MeasureReport.StratifierGroupComponent>();
 
         foreach (var dr in dimRows.OrderBy(r => Get(r, "dimension_value")))
         {
-            var stratum = new MeasureReport.StratumComponent
+            var stratum = new MeasureReport.StratifierGroupComponent
             {
                 Value = new CodeableConcept
                 {
