@@ -1,0 +1,5 @@
+bin/
+obj/
+test_output.json
+*.user
+.vs/
