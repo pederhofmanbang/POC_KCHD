@@ -1,5 +1,5 @@
 -- ============================================================
--- FHIR-PAKET v3 (05_fhir/) — KOMPLETT, ALLA 16 KPI:er × ALLA DIMENSIONER
+-- FHIR-PAKET v3.1 (05_fhir/) — KOMPLETT, ALLA 16 KPI:er × ALLA DIMENSIONER
 --
 -- Skapade vyer:
 --   ref_fhir_system         Alla system-URI:er (bytbara)
@@ -14,6 +14,12 @@
 --   D6: Per-dimensioner som stratifiers — alla 5 mått per dimension
 --   D7: Medelväntetid som extra group
 --   D8: Remiss→beslut som extra group
+--
+-- v3.1 ÄNDRINGAR (2026-03-28):
+--   FIX 1: k.n_age_under_50 → k.n_age_lt50   (5 total-block)
+--   FIX 2: k.n_age_85_plus  → k.n_age_85plus  (5 total-block)
+--   FIX 3: d.kontaktform    → d.vardkontakttyp (5 per-kontaktform-block)
+--   Alias (AS strat_age_under_50 etc.) är OFÖRÄNDRADE — Python/C# läser dessa.
 -- ============================================================
 
 
@@ -41,8 +47,8 @@ SELECT
   k.andel_inom_90 AS measure_score, '%' AS measure_score_unit,
   k.antal_genomforda AS pop_initial, k.namnare_vg AS pop_denominator, k.taljare_vg AS pop_numerator,
   k.antal_man AS strat_kon_man, k.antal_kvinna AS strat_kon_kvinna,
-  k.n_age_under_50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
-  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85_plus AS strat_age_85_plus,
+  k.n_age_lt50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
+  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85plus AS strat_age_85_plus,
   k.n_0_30 AS strat_vt_0_30, k.n_31_60 AS strat_vt_31_60, k.n_61_90 AS strat_vt_61_90,
   k.n_91_120 AS strat_vt_91_120, k.n_121_180 AS strat_vt_121_180, k.n_over_180 AS strat_vt_over_180,
   CAST(NULL AS VARCHAR) AS dimension_type, CAST(NULL AS VARCHAR) AS dimension_value, CAST(NULL AS VARCHAR) AS dimension_display
@@ -59,8 +65,8 @@ SELECT
   CAST(k.median_vantetid AS DOUBLE) AS measure_score, 'dagar' AS measure_score_unit,
   k.antal_genomforda AS pop_initial, NULL AS pop_denominator, NULL AS pop_numerator,
   k.antal_man AS strat_kon_man, k.antal_kvinna AS strat_kon_kvinna,
-  k.n_age_under_50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
-  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85_plus AS strat_age_85_plus,
+  k.n_age_lt50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
+  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85plus AS strat_age_85_plus,
   k.n_0_30 AS strat_vt_0_30, k.n_31_60 AS strat_vt_31_60, k.n_61_90 AS strat_vt_61_90,
   k.n_91_120 AS strat_vt_91_120, k.n_121_180 AS strat_vt_121_180, k.n_over_180 AS strat_vt_over_180,
   CAST(NULL AS VARCHAR) AS dimension_type, CAST(NULL AS VARCHAR) AS dimension_value, CAST(NULL AS VARCHAR) AS dimension_display
@@ -77,8 +83,8 @@ SELECT
   CAST(k.medel_vantetid AS DOUBLE) AS measure_score, 'dagar' AS measure_score_unit,
   k.antal_genomforda AS pop_initial, NULL AS pop_denominator, NULL AS pop_numerator,
   k.antal_man AS strat_kon_man, k.antal_kvinna AS strat_kon_kvinna,
-  k.n_age_under_50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
-  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85_plus AS strat_age_85_plus,
+  k.n_age_lt50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
+  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85plus AS strat_age_85_plus,
   k.n_0_30 AS strat_vt_0_30, k.n_31_60 AS strat_vt_31_60, k.n_61_90 AS strat_vt_61_90,
   k.n_91_120 AS strat_vt_91_120, k.n_121_180 AS strat_vt_121_180, k.n_over_180 AS strat_vt_over_180,
   CAST(NULL AS VARCHAR) AS dimension_type, CAST(NULL AS VARCHAR) AS dimension_value, CAST(NULL AS VARCHAR) AS dimension_display
@@ -95,8 +101,8 @@ SELECT
   CAST(k.median_total_patientresa AS DOUBLE) AS measure_score, 'dagar' AS measure_score_unit,
   k.antal_genomforda AS pop_initial, NULL AS pop_denominator, NULL AS pop_numerator,
   k.antal_man AS strat_kon_man, k.antal_kvinna AS strat_kon_kvinna,
-  k.n_age_under_50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
-  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85_plus AS strat_age_85_plus,
+  k.n_age_lt50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
+  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85plus AS strat_age_85_plus,
   k.n_0_30 AS strat_vt_0_30, k.n_31_60 AS strat_vt_31_60, k.n_61_90 AS strat_vt_61_90,
   k.n_91_120 AS strat_vt_91_120, k.n_121_180 AS strat_vt_121_180, k.n_over_180 AS strat_vt_over_180,
   CAST(NULL AS VARCHAR) AS dimension_type, CAST(NULL AS VARCHAR) AS dimension_value, CAST(NULL AS VARCHAR) AS dimension_display
@@ -113,8 +119,8 @@ SELECT
   CAST(k.median_remiss_till_beslut AS DOUBLE) AS measure_score, 'dagar' AS measure_score_unit,
   k.antal_genomforda AS pop_initial, NULL AS pop_denominator, NULL AS pop_numerator,
   k.antal_man AS strat_kon_man, k.antal_kvinna AS strat_kon_kvinna,
-  k.n_age_under_50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
-  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85_plus AS strat_age_85_plus,
+  k.n_age_lt50 AS strat_age_under_50, k.n_age_50_64 AS strat_age_50_64,
+  k.n_age_65_74 AS strat_age_65_74, k.n_age_75_84 AS strat_age_75_84, k.n_age_85plus AS strat_age_85_plus,
   k.n_0_30 AS strat_vt_0_30, k.n_31_60 AS strat_vt_31_60, k.n_61_90 AS strat_vt_61_90,
   k.n_91_120 AS strat_vt_91_120, k.n_121_180 AS strat_vt_121_180, k.n_over_180 AS strat_vt_over_180,
   CAST(NULL AS VARCHAR) AS dimension_type, CAST(NULL AS VARCHAR) AS dimension_value, CAST(NULL AS VARCHAR) AS dimension_display
@@ -201,7 +207,7 @@ SELECT
   NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
   NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
   NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
-  'kontaktform', d.kontaktform, d.kontaktform
+  'kontaktform', d.vardkontakttyp, d.vardkontakttyp
 FROM res_kpi_per_kontaktform d CROSS JOIN ref_fhir_system sys
 UNION ALL
 -- Per kontaktform: median_vantetid
@@ -215,7 +221,7 @@ SELECT
   NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
   NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
   NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
-  'kontaktform', d.kontaktform, d.kontaktform
+  'kontaktform', d.vardkontakttyp, d.vardkontakttyp
 FROM res_kpi_per_kontaktform d CROSS JOIN ref_fhir_system sys
 UNION ALL
 -- Per kontaktform: medel_vantetid
@@ -229,7 +235,7 @@ SELECT
   NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
   NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
   NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
-  'kontaktform', d.kontaktform, d.kontaktform
+  'kontaktform', d.vardkontakttyp, d.vardkontakttyp
 FROM res_kpi_per_kontaktform d CROSS JOIN ref_fhir_system sys
 UNION ALL
 -- Per kontaktform: median_patientresa
@@ -243,7 +249,7 @@ SELECT
   NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
   NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
   NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
-  'kontaktform', d.kontaktform, d.kontaktform
+  'kontaktform', d.vardkontakttyp, d.vardkontakttyp
 FROM res_kpi_per_kontaktform d CROSS JOIN ref_fhir_system sys
 UNION ALL
 -- Per kontaktform: median_remiss_beslut
@@ -257,7 +263,7 @@ SELECT
   NULL AS strat_age_65_74, NULL AS strat_age_75_84, NULL AS strat_age_85_plus,
   NULL AS strat_vt_0_30, NULL AS strat_vt_31_60, NULL AS strat_vt_61_90,
   NULL AS strat_vt_91_120, NULL AS strat_vt_121_180, NULL AS strat_vt_over_180,
-  'kontaktform', d.kontaktform, d.kontaktform
+  'kontaktform', d.vardkontakttyp, d.vardkontakttyp
 FROM res_kpi_per_kontaktform d CROSS JOIN ref_fhir_system sys
 UNION ALL
 -- Per bokningssatt: andel_inom_90
