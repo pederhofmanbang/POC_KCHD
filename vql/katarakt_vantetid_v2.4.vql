@@ -1,0 +1,778 @@
+-- ============================================================
+-- KCHD Katarakt väntetidspaket v2.4
+-- Ändringar sedan v2.3 (levererat till VGR):
+--
+--   NYTT:  ref_filter_region      Konfigurerbar: vilka LKF hör till regionen
+--   NYTT:  ref_avvikelsekoder     Referensvy: vad koderna 1/2/3 betyder
+--   ÄNDRAD: calc_vantetid_genomford  +is_hemregion, fixad patientresa-kommentar
+--   ÄNDRAD: res_kpi_manad            +sjukhusnamn i GROUP BY
+--   ÄNDRAD: res_genomford_detalj     +is_hemregion i kolumnlista
+--   ÄNDRAD: verif_jamforelse          +sjukhusnamn (VGR:s förbättring)
+--   ÄNDRAD: dq_rapport_data           +sjukhusnamn i DQ6
+--
+-- Orsak: VGR körde v2.3 mot verklig data (feb 2026) och siffrorna
+-- matchade inte vantetider.se exakt. Trolig orsak: utomläningar
+-- (patienter folkbokförda utanför regionen). is_hemregion-flaggan
+-- låter regionen filtrera vid behov utan att ändra beräkningslogiken.
+--
+-- OBS getdaysbetween: VGR:s Denodo använder
+--   getdaysbetween(TIDIGARE_DATUM, SENARE_DATUM) = positivt tal
+-- Verifiera att detta stämmer i er Denodo-version innan körning.
+-- ============================================================
+
+
+-- ──────────────────────────────────────────────
+-- 00a: ref_kva_katarakt (OFÖRÄNDRAD)
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW ref_kva_katarakt AS
+-- Aktivitet 51101 Gråstarr | MVO 511 Ögon
+-- Källa: Socialstyrelsens "Lista över aktiviteter/vårdutbud"
+-- 15 koder i 3 KVÅ-grupper: CJC, CJD, CJE
+          SELECT 'CJC00' AS kva_kod, 'ICCE' AS beskrivning
+UNION ALL SELECT 'CJC10', 'ICCE + linsprotes FK'
+UNION ALL SELECT 'CJC20', 'ICCE + linsprotes BK'
+UNION ALL SELECT 'CJC99', 'Annan ICCE'
+UNION ALL SELECT 'CJD00', 'ECCE'
+UNION ALL SELECT 'CJD10', 'ECCE + linsprotes FK'
+UNION ALL SELECT 'CJD20', 'ECCE + linsprotes BK'
+UNION ALL SELECT 'CJD99', 'Annan ECCE'
+UNION ALL SELECT 'CJE00', 'Fakoemulsifikation'
+UNION ALL SELECT 'CJE05', 'Fako + iridektomi'
+UNION ALL SELECT 'CJE10', 'Fako + linsprotes FK'
+UNION ALL SELECT 'CJE15', 'Fako + iridektomi + linsprotes FK'
+UNION ALL SELECT 'CJE20', 'Fako + linsprotes BK'
+UNION ALL SELECT 'CJE25', 'Fako + iridektomi + linsprotes BK'
+UNION ALL SELECT 'CJE99', 'Annan fako';
+
+
+-- ──────────────────────────────────────────────
+-- 00b: ref_avvikelsekoder (NYTT i v2.4)
+--
+-- Dokumenterar avvikelsekoderna.
+-- Källa: SKR informationsmodell v1.1, kodAVVIKELSE
+--
+-- VIKTIGT om kodformat:
+--   XSD-specen definierar koderna som heltal (1, 2, 3).
+--   Regionens källdata kan lagra dem som '1'/'2'/'3'
+--   eller som 'PvV'/'MoV'/'SoV'. Basvyn (src_genomford)
+--   ansvarar för att översätta till det format som
+--   beräkningslagret förväntar sig.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW ref_avvikelsekoder AS
+          SELECT '1' AS kod, 'PvV' AS kortnamn, 'Patientvald väntan' AS beskrivning,
+                 'Patienten har erbjudits tid inom VG men aktivt tackat nej. Exkluderas ur VG-beräkning (nämnare+täljare) för både väntande och genomförda.' AS regel
+UNION ALL SELECT '2', 'MoV', 'Medicinskt orsakad väntan',
+                 'Patientens hälsotillstånd hindrar planerad vård. Exkluderas vid redovisning av väntande (ej aktivt väntande). Inkluderas i VG-beräkning för genomförda.'
+UNION ALL SELECT '3', 'SoV', 'Särskilt orsakad väntan',
+                 'Enbart BUP. Sociala situationer. Hanteras som MoV om systemet ej stödjer SoV.';
+
+
+-- ──────────────────────────────────────────────
+-- 00c: ref_filter_region (NYTT i v2.4)
+--
+-- ⚠️ ÄNDRA DETTA PER REGION
+-- Definierar vilka länskoder (de 2 första siffrorna i LKF)
+-- som tillhör regionen. Används i calc_vantetid_genomford
+-- för att flagga utomläningar (is_hemregion).
+--
+-- LKF = SCB:s kommunkod, 4 siffror: LLKK
+--   LL = länskod (t.ex. 14 = Västra Götaland)
+--   KK = kommunkod inom länet
+--
+-- VGR har bara en länskod: 14.
+-- Andra regioner kan ha flera (t.ex. Region Värmland = 17).
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW ref_filter_region AS
+          SELECT '14' AS lanskod, 'Västra Götalands län' AS beskrivning  -- ⚠️ ändra per region
+;
+
+
+-- ──────────────────────────────────────────────
+-- 01a: src_genomford (OFÖRÄNDRAD — mall)
+--
+-- Kommentar om kodformat:
+--   vardgaranti: XSD säger 1=JA, 2=NEJ (heltal).
+--     Er källdata kan ha '1'/'2' eller 'JA'/'NEJ'.
+--     Beräkningslagret (calc_vantetid_genomford)
+--     förväntar sig det format ni väljer här.
+--     Se kommentar i calc_vantetid_genomford.
+--
+--   avvikelsekod: XSD säger 1/2/3 (heltal).
+--     Er källdata kan ha '1'/'2'/'3' eller 'PvV'/'MoV'/'SoV'.
+--     Anpassa calc_vantetid_genomford om ni byter format.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW src_genomford AS
+SELECT
+  -- ⚠️ ÄNDRA KOLUMNNAMNEN TILL VÄNSTER
+  kontakt_id          AS vardkontakt_id,    -- ⚠️ ändra
+  pat_id              AS patient_id,        -- ⚠️ ändra
+  kon_kod             AS kon,               -- ⚠️ ändra  (XSD: 1=Man 2=Kvinna. Er data kan ha 'M'/'K')
+  fodelsar            AS fodelsear,         -- ⚠️ ändra
+  '51'                AS regionkod,         -- ⚠️ ändra per region
+  hsa_region          AS hsaid_region,      -- ⚠️ ändra
+  hsa_vardgivare      AS hsaid_vardgivare,  -- ⚠️ ändra
+  hsa_vardenhet       AS hsaid_vardenhet,   -- ⚠️ ändra
+  hsa_enhet           AS hsaid_enhet,       -- ⚠️ ändra  (NULL om saknas)
+  sjukhus_kod         AS sjukhuskod,        -- ⚠️ ändra
+  sjukhus_namn        AS sjukhusnamn,       -- ⚠️ ändra
+  mvo                 AS mvo_kod,           -- ⚠️ ändra  ('511' = Ögon)
+  '51101'             AS aktivitetskod,     -- Gråstarr (hårdkodat)
+  kva_aktivitet       AS aktivitet_kva,     -- ⚠️ ändra  (NULL om saknas)
+  icd_aktivitet       AS aktivitet_icd,     -- ⚠️ ändra  (NULL om saknas)
+  kva                 AS kva_kod,           -- ⚠️ ändra  ('CJE20' etc.)
+  yrke                AS yrkeskategori,     -- ⚠️ ändra
+  bokning             AS bokningssatt,      -- ⚠️ ändra
+  kontakttyp          AS vardkontakttyp,    -- ⚠️ ändra
+  vg_flagga           AS vardgaranti,       -- ⚠️ ändra  (XSD: '1'=JA '2'=NEJ)
+  avvikelse           AS avvikelsekod,      -- ⚠️ ändra  (XSD: '1'=PvV '2'=MoV '3'=SoV, NULL=ingen)
+  remtyp              AS remittenttyp,      -- ⚠️ ändra
+  rem_hsaid           AS remittent_hsaid,   -- ⚠️ ändra
+  remiss_id           AS remiss_id,         -- ⚠️ ändra
+  rem_datum           AS remiss_datum,      -- ⚠️ ändra
+  rem_ankomst         AS ankomst_datum,     -- ⚠️ ändra
+  beslut_datum        AS beslut_datum,      -- ⚠️ ändra  (MP1 — väntetidsstart)
+  start_datum         AS start_datum,       -- ⚠️ ändra  (MP2 — väntetidsslut)
+  med_maldatum        AS medicinskt_maldatum, -- ⚠️ ändra (MP3)
+  kommun_kod          AS lkf,               -- ⚠️ ändra  (SCB 4-siffrig: LLKK)
+  hsa_listning        AS hsaid_listning,    -- ⚠️ ändra
+  period              AS matperiod          -- ⚠️ ändra
+-- ⚠️ ÄNDRA TABELLNAMNET NEDAN
+FROM ds_datalager.v_genomford_specialiserad;
+
+
+-- ──────────────────────────────────────────────
+-- 01b: src_vantande (OFÖRÄNDRAD — mall)
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW src_vantande AS
+SELECT
+  -- ⚠️ ÄNDRA KOLUMNNAMNEN (samma princip som src_genomford)
+  kontakt_id          AS vardkontakt_id,
+  pat_id              AS patient_id,
+  kon_kod             AS kon,
+  fodelsar            AS fodelsear,
+  '51'                AS regionkod,         -- ⚠️ ändra per region
+  hsa_region          AS hsaid_region,
+  hsa_vardgivare      AS hsaid_vardgivare,
+  hsa_vardenhet       AS hsaid_vardenhet,
+  hsa_enhet           AS hsaid_enhet,
+  sjukhus_kod         AS sjukhuskod,
+  sjukhus_namn        AS sjukhusnamn,
+  mvo                 AS mvo_kod,
+  '51101'             AS aktivitetskod,
+  kva_aktivitet       AS aktivitet_kva,
+  icd_aktivitet       AS aktivitet_icd,
+  kva                 AS kva_kod,
+  yrke                AS yrkeskategori,
+  bokning             AS bokningssatt,
+  kontakttyp          AS vardkontakttyp,
+  vg_flagga           AS vardgaranti,
+  avvikelse           AS avvikelsekod,
+  remtyp              AS remittenttyp,
+  rem_hsaid           AS remittent_hsaid,
+  remiss_id           AS remiss_id,
+  rem_datum           AS remiss_datum,
+  rem_ankomst         AS ankomst_datum,
+  beslut_datum        AS beslut_datum,
+  NULL                AS start_datum,       -- Alltid NULL för väntande
+  med_maldatum        AS medicinskt_maldatum,
+  kommun_kod          AS lkf,
+  hsa_listning        AS hsaid_listning,
+  period              AS matperiod
+-- ⚠️ ÄNDRA TABELLNAMNET NEDAN
+FROM ds_datalager.v_vantande_specialiserad;
+
+
+-- ──────────────────────────────────────────────
+-- 02a: calc_vantetid_genomford (ÄNDRAD i v2.4)
+--
+-- Ändringar:
+--   1. NYTT: is_hemregion — flagga baserad på ref_filter_region.
+--      1 = patienten folkbokförd i regionen.
+--      0 = utomläning (opererad här men bor i annan region).
+--      Filtrera INTE på den — den finns för analys och
+--      för att kunna jämföra med/utan utomläningar.
+--
+--   2. FIXAT: Tydligare kommentarer på patientresa-beräkningarna
+--      så att getdaysbetween-argument inte råkar bytas.
+--
+-- OBS: Beräkningen av uppfyller_vg, vantetid_dagar etc.
+-- är OFÖRÄNDRAD från v2.3.
+--
+-- ⚠️ AVVIKELSEKODER: Denna vy förväntar sig att
+--   avvikelsekod = '1' betyder PvV. Om er basvy
+--   producerar 'PvV' istället, ändra <> '1' till <> 'PvV'.
+--
+-- ⚠️ VÅRDGARANTI: Denna vy förväntar sig att
+--   vardgaranti = '1' betyder JA. Om er basvy
+--   producerar 'JA' istället, ändra = '1' till = 'JA'.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW calc_vantetid_genomford AS
+SELECT
+  src.*,
+
+  -- Väntetid: beslut → operation (dagar)
+  -- getdaysbetween(TIDIGARE, SENARE) = positivt tal
+  GETDAYSBETWEEN(src.beslut_datum, src.start_datum)
+    AS vantetid_dagar,
+
+  -- Väntetidsintervall (samma intervall som vantetider.se)
+  CASE
+    WHEN GETDAYSBETWEEN(src.beslut_datum, src.start_datum) <= 30  THEN '0-30'
+    WHEN GETDAYSBETWEEN(src.beslut_datum, src.start_datum) <= 60  THEN '31-60'
+    WHEN GETDAYSBETWEEN(src.beslut_datum, src.start_datum) <= 90  THEN '61-90'
+    WHEN GETDAYSBETWEEN(src.beslut_datum, src.start_datum) <= 120 THEN '91-120'
+    WHEN GETDAYSBETWEEN(src.beslut_datum, src.start_datum) <= 180 THEN '121-180'
+    ELSE '>180'
+  END AS vantetid_intervall,
+
+  -- Åldersgrupp (beräknad från födelseår vid operationstillfället)
+  CASE
+    WHEN (GETYEAR(src.start_datum) - src.fodelsear) < 50 THEN '<50'
+    WHEN (GETYEAR(src.start_datum) - src.fodelsear) < 65 THEN '50-64'
+    WHEN (GETYEAR(src.start_datum) - src.fodelsear) < 75 THEN '65-74'
+    WHEN (GETYEAR(src.start_datum) - src.fodelsear) < 85 THEN '75-84'
+    ELSE '85+'
+  END AS aldersgrupp,
+
+  -- Vårdgaranti: 1 om uppfylld, 0 annars
+  -- PvV (avvikelsekod '1') exkluderas — korrekt per SKR:s dokumentation.
+  -- MoV (avvikelsekod '2') exkluderas INTE för genomförda — korrekt per SKR:s dokumentation.
+  CASE
+    WHEN src.vardgaranti = '1'                             -- ⚠️ ändra till 'JA' om er data har textformat
+         AND COALESCE(src.avvikelsekod, '') <> '1'         -- ⚠️ ändra till 'PvV' om er data har textformat
+         AND GETDAYSBETWEEN(src.beslut_datum, src.start_datum) <= 90
+    THEN 1 ELSE 0
+  END AS uppfyller_vg,
+
+  -- Total patientresa: remiss → operation (INTE beslut → operation)
+  -- Mäter hela vägen från att remissen skrevs till att operationen skedde.
+  CASE WHEN src.remiss_datum IS NOT NULL
+    THEN GETDAYSBETWEEN(src.remiss_datum, src.start_datum)   -- remiss → operation
+    ELSE NULL
+  END AS total_patientresa_dagar,
+
+  -- Remiss till beslut: remiss → beslut (INTE beslut → operation)
+  -- Mäter tiden från remissen till specialistens op-beslut.
+  CASE WHEN src.remiss_datum IS NOT NULL AND src.beslut_datum IS NOT NULL
+    THEN GETDAYSBETWEEN(src.remiss_datum, src.beslut_datum)  -- remiss → beslut
+    ELSE NULL
+  END AS remiss_till_beslut_dagar,
+
+  -- Utomläningsflagga (NYTT i v2.4)
+  -- 1 = patienten folkbokförd i regionen (LKF-prefix matchar ref_filter_region)
+  -- 0 = utomläning (opererad här men bor i annan region)
+  -- Denna kolumn FILTRERAR INTE bort något — alla rader behålls.
+  -- Regionen kan använda WHERE is_hemregion = 1 vid behov.
+  CASE
+    WHEN LEFT(src.lkf, 2) IN (SELECT lanskod FROM ref_filter_region)
+    THEN 1 ELSE 0
+  END AS is_hemregion,
+
+  GETYEAR(src.start_datum)  AS op_ar,
+  GETMONTH(src.start_datum) AS op_manad
+
+FROM src_genomford src
+WHERE src.kva_kod IN (SELECT kva_kod FROM ref_kva_katarakt)
+  AND src.mvo_kod = '511'
+  AND src.beslut_datum IS NOT NULL
+  AND src.start_datum  IS NOT NULL
+  AND GETDAYSBETWEEN(src.beslut_datum, src.start_datum) >= 0;
+
+
+-- ──────────────────────────────────────────────
+-- 02b: calc_vantande (OFÖRÄNDRAD)
+--
+-- MoV exkluderas korrekt vid bryter_vg (väntande).
+-- Källa: SKR dokumentation — "MoV kan exkluderas vid
+-- redovisning av väntande".
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW calc_vantande AS
+SELECT
+  src.*,
+
+  GETDAYSBETWEEN(src.beslut_datum, LASTDAYOFMONTH(CURRENT_DATE))
+    AS vantetid_dagar,
+
+  LASTDAYOFMONTH(CURRENT_DATE) AS rapportdatum,
+
+  CASE
+    WHEN GETDAYSBETWEEN(src.beslut_datum, LASTDAYOFMONTH(CURRENT_DATE)) <= 30  THEN '0-30'
+    WHEN GETDAYSBETWEEN(src.beslut_datum, LASTDAYOFMONTH(CURRENT_DATE)) <= 60  THEN '31-60'
+    WHEN GETDAYSBETWEEN(src.beslut_datum, LASTDAYOFMONTH(CURRENT_DATE)) <= 90  THEN '61-90'
+    WHEN GETDAYSBETWEEN(src.beslut_datum, LASTDAYOFMONTH(CURRENT_DATE)) <= 120 THEN '91-120'
+    WHEN GETDAYSBETWEEN(src.beslut_datum, LASTDAYOFMONTH(CURRENT_DATE)) <= 180 THEN '121-180'
+    ELSE '>180'
+  END AS vantetid_intervall,
+
+  -- MoV = ej aktivt väntande
+  CASE
+    WHEN COALESCE(src.avvikelsekod, '') = '2' THEN 'Ej aktivt väntande'  -- ⚠️ ändra till 'MoV' om textformat
+    ELSE 'Aktivt väntande'
+  END AS vantestatus,
+
+  -- VG-risk: bryter vårdgarantin?
+  -- Exkluderar BÅDE PvV ('1') och MoV ('2') — korrekt per SKR för väntande.
+  CASE
+    WHEN src.vardgaranti = '1'                                            -- ⚠️ ändra till 'JA' om textformat
+         AND COALESCE(src.avvikelsekod, '') NOT IN ('1', '2')             -- ⚠️ ändra till ('PvV','MoV') om textformat
+         AND GETDAYSBETWEEN(src.beslut_datum, LASTDAYOFMONTH(CURRENT_DATE)) > 90
+    THEN 1 ELSE 0
+  END AS bryter_vg
+
+FROM src_vantande src
+WHERE src.kva_kod IN (SELECT kva_kod FROM ref_kva_katarakt)
+  AND src.mvo_kod = '511'
+  AND src.beslut_datum IS NOT NULL
+  AND src.start_datum  IS NULL;
+
+
+-- ──────────────────────────────────────────────
+-- 03a: res_kpi_manad (ÄNDRAD i v2.4)
+--
+-- Ändring: sjukhusnamn tillagt i GROUP BY och SELECT.
+-- Anledning: VGR visade att verifiering mot vantetider.se
+-- kräver per-sjukhus-uppdelning. sjukhusnamn är 1:1 med
+-- sjukhuskod — ändrar inte antal grupper.
+--
+-- ⚠️ KÖN: Denna vy använder kon='1' (man) och kon='2' (kvinna).
+-- Om er basvy producerar 'M'/'K', ändra nedan.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW res_kpi_manad AS
+SELECT
+  g.op_ar AS ar, g.op_manad AS manad,
+  g.hsaid_vardenhet, g.hsaid_region, g.regionkod,
+  g.sjukhuskod, g.sjukhusnamn,                  -- sjukhusnamn tillagt i v2.4
+
+  COUNT(*) AS antal_genomforda,
+
+  MEDIAN(g.vantetid_dagar)                   AS median_vantetid,
+  AVG(CAST(g.vantetid_dagar AS DOUBLE))      AS medel_vantetid,
+
+  -- Vårdgarantiuppfyllelse
+  -- PvV exkluderas. MoV inkluderas (korrekt för genomförda per SKR).
+  COUNT(CASE WHEN g.vardgaranti='1' AND COALESCE(g.avvikelsekod,'')<>'1' THEN 1 END)
+    AS namnare_vg,
+  COUNT(CASE WHEN g.vardgaranti='1' AND COALESCE(g.avvikelsekod,'')<>'1' AND g.vantetid_dagar<=90 THEN 1 END)
+    AS taljare_vg,
+  CASE WHEN COUNT(CASE WHEN g.vardgaranti='1' AND COALESCE(g.avvikelsekod,'')<>'1' THEN 1 END) > 0
+    THEN CAST(COUNT(CASE WHEN g.vardgaranti='1' AND COALESCE(g.avvikelsekod,'')<>'1' AND g.vantetid_dagar<=90 THEN 1 END) AS DOUBLE)
+       / COUNT(CASE WHEN g.vardgaranti='1' AND COALESCE(g.avvikelsekod,'')<>'1' THEN 1 END)
+    ELSE NULL END AS andel_inom_90,
+
+  -- Fördelning per tidsintervall
+  COUNT(CASE WHEN g.vantetid_intervall='0-30' THEN 1 END)  AS n_0_30,
+  COUNT(CASE WHEN g.vantetid_intervall='31-60' THEN 1 END) AS n_31_60,
+  COUNT(CASE WHEN g.vantetid_intervall='61-90' THEN 1 END) AS n_61_90,
+  COUNT(CASE WHEN g.vantetid_intervall='91-120' THEN 1 END) AS n_91_120,
+  COUNT(CASE WHEN g.vantetid_intervall='121-180' THEN 1 END) AS n_121_180,
+  COUNT(CASE WHEN g.vantetid_intervall='>180' THEN 1 END) AS n_over_180,
+
+  -- Per kön (⚠️ ändra '1'/'2' till 'M'/'K' om er data har bokstäver)
+  COUNT(CASE WHEN g.kon='1' THEN 1 END) AS antal_man,
+  COUNT(CASE WHEN g.kon='2' THEN 1 END) AS antal_kvinna,
+  MEDIAN(CASE WHEN g.kon='1' THEN g.vantetid_dagar END) AS median_man,
+  MEDIAN(CASE WHEN g.kon='2' THEN g.vantetid_dagar END) AS median_kvinna,
+
+  -- Per åldersgrupp
+  COUNT(CASE WHEN g.aldersgrupp='<50' THEN 1 END) AS n_age_lt50,
+  COUNT(CASE WHEN g.aldersgrupp='50-64' THEN 1 END) AS n_age_50_64,
+  COUNT(CASE WHEN g.aldersgrupp='65-74' THEN 1 END) AS n_age_65_74,
+  COUNT(CASE WHEN g.aldersgrupp='75-84' THEN 1 END) AS n_age_75_84,
+  COUNT(CASE WHEN g.aldersgrupp='85+' THEN 1 END) AS n_age_85plus,
+
+  -- Patientresa
+  MEDIAN(g.total_patientresa_dagar) AS median_total_patientresa,
+  MEDIAN(g.remiss_till_beslut_dagar) AS median_remiss_till_beslut
+
+FROM calc_vantetid_genomford g
+GROUP BY g.op_ar, g.op_manad, g.hsaid_vardenhet, g.hsaid_region,
+         g.regionkod, g.sjukhuskod, g.sjukhusnamn;
+
+
+-- ──────────────────────────────────────────────
+-- 03b: Per-dimension-vyer (OFÖRÄNDRADE)
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW res_kpi_per_yrke AS
+SELECT op_ar, op_manad, yrkeskategori,
+  COUNT(*) AS antal, MEDIAN(vantetid_dagar) AS median_vt,
+  CAST(COUNT(CASE WHEN uppfyller_vg=1 THEN 1 END) AS DOUBLE)
+    / NULLIF(COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END),0) AS andel_90
+FROM calc_vantetid_genomford GROUP BY op_ar, op_manad, yrkeskategori;
+
+CREATE OR REPLACE VIEW res_kpi_per_kontaktform AS
+SELECT op_ar, op_manad, vardkontakttyp,
+  COUNT(*) AS antal, MEDIAN(vantetid_dagar) AS median_vt
+FROM calc_vantetid_genomford GROUP BY op_ar, op_manad, vardkontakttyp;
+
+CREATE OR REPLACE VIEW res_kpi_per_bokning AS
+SELECT op_ar, op_manad, bokningssatt,
+  COUNT(*) AS antal, MEDIAN(vantetid_dagar) AS median_vt
+FROM calc_vantetid_genomford GROUP BY op_ar, op_manad, bokningssatt;
+
+CREATE OR REPLACE VIEW res_kpi_per_remittent AS
+SELECT op_ar, op_manad, remittenttyp, remittent_hsaid,
+  COUNT(*) AS antal, MEDIAN(vantetid_dagar) AS median_vt
+FROM calc_vantetid_genomford GROUP BY op_ar, op_manad, remittenttyp, remittent_hsaid;
+
+CREATE OR REPLACE VIEW res_kpi_per_kommun AS
+SELECT op_ar, op_manad, lkf,
+  COUNT(*) AS antal, MEDIAN(vantetid_dagar) AS median_vt
+FROM calc_vantetid_genomford GROUP BY op_ar, op_manad, lkf;
+
+
+-- ──────────────────────────────────────────────
+-- 03c: Detaljvyer (ÄNDRAD: is_hemregion tillagt)
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW res_genomford_detalj AS
+SELECT
+  vardkontakt_id, patient_id, kon, fodelsear, aldersgrupp,
+  regionkod, sjukhuskod, sjukhusnamn, hsaid_vardenhet,
+  mvo_kod, kva_kod, aktivitetskod,
+  yrkeskategori, bokningssatt, vardkontakttyp,
+  vardgaranti, avvikelsekod,
+  remittenttyp, remittent_hsaid,
+  remiss_datum, ankomst_datum, beslut_datum, start_datum,
+  medicinskt_maldatum, lkf, hsaid_listning, matperiod,
+  vantetid_dagar, vantetid_intervall, uppfyller_vg,
+  total_patientresa_dagar, remiss_till_beslut_dagar,
+  is_hemregion,                                          -- NYTT i v2.4
+  op_ar, op_manad
+FROM calc_vantetid_genomford;
+
+CREATE OR REPLACE VIEW res_vantande_detalj AS
+SELECT
+  vardkontakt_id, patient_id, kon, fodelsear,
+  regionkod, sjukhuskod, sjukhusnamn, hsaid_vardenhet,
+  mvo_kod, kva_kod, aktivitetskod,
+  yrkeskategori, vardgaranti, avvikelsekod,
+  remittenttyp, remittent_hsaid,
+  remiss_datum, beslut_datum, medicinskt_maldatum,
+  lkf, hsaid_listning, matperiod,
+  vantetid_dagar, vantetid_intervall,
+  rapportdatum, vantestatus, bryter_vg
+FROM calc_vantande;
+
+
+-- ──────────────────────────────────────────────
+-- 04a: verif_jamforelse (ÄNDRAD i v2.4)
+--
+-- Ändring: sjukhusnamn tillagt i SELECT och GROUP BY.
+-- Anledning: vantetider.se visar per sjukhus — man kan
+-- inte jämföra utan att ha per-sjukhus-uppdelning.
+-- Tack till VGR som visade att detta behövdes.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW verif_jamforelse AS
+-- Andel inom 90 dagar (VG-andel)
+SELECT op_manad AS manad, sjukhusnamn AS sjukhus,
+  'Andel inom 90 dagar' AS kpi,
+  CAST(CAST(COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' AND vantetid_dagar<=90 THEN 1 END) AS DOUBLE)
+    / NULLIF(COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END), 0) * 100 AS DECIMAL(5,1)) AS beraknat_varde,
+  '%' AS enhet,
+  COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END) AS namnare,
+  COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' AND vantetid_dagar<=90 THEN 1 END) AS taljare,
+  'vantetider.se > Specialiserad vard > Aktuellt vardgarantilage > Valj region + Ogonsjukvard + Operation/atgard' AS var_pa_vantetider_se,
+  'Spindeldiagrammet visar andel i %. Valj ratt period och sjukhus.' AS kommentar
+FROM calc_vantetid_genomford
+GROUP BY op_manad, sjukhusnamn
+
+UNION ALL
+-- Medianväntetid
+SELECT op_manad, sjukhusnamn,
+  'Medianvantetid (alla genomforda)' AS kpi,
+  CAST(MEDIAN(vantetid_dagar) AS DECIMAL(5,1)),
+  'dagar', COUNT(*), NULL,
+  'vantetider.se > Specialiserad vard > Medel- och medianvantetid > Valj region + Ogonsjukvard + Operation/atgard',
+  'Visa median (inte medel).'
+FROM calc_vantetid_genomford
+GROUP BY op_manad, sjukhusnamn
+
+UNION ALL
+-- Medelväntetid
+SELECT op_manad, sjukhusnamn,
+  'Medelvantetid (alla genomforda)',
+  CAST(AVG(CAST(vantetid_dagar AS DOUBLE)) AS DECIMAL(5,1)),
+  'dagar', COUNT(*), NULL,
+  'vantetider.se > Specialiserad vard > Medel- och medianvantetid > Valj region + Ogonsjukvard + Operation/atgard',
+  'Visa medel (inte median).'
+FROM calc_vantetid_genomford
+GROUP BY op_manad, sjukhusnamn
+
+UNION ALL
+-- Antal genomförda
+SELECT op_manad, sjukhusnamn,
+  'Antal genomforda operationer',
+  CAST(COUNT(*) AS DECIMAL(10,0)),
+  'st', NULL, NULL,
+  'vantetider.se > Specialiserad vard > Utokad uppfoljning > Valj region + Ogonsjukvard + Operation/atgard',
+  'Antal visas i tabellen. Valj ratt manad.'
+FROM calc_vantetid_genomford
+GROUP BY op_manad, sjukhusnamn
+
+UNION ALL
+-- Antal väntande
+SELECT matperiod, sjukhusnamn,
+  'Antal vantande',
+  CAST(COUNT(*) AS DECIMAL(10,0)),
+  'st', NULL, NULL,
+  'vantetider.se > Specialiserad vard > Utokad uppfoljning > Valj region + Ogonsjukvard + Fliken Vantande',
+  'Ogonblicksbild sista dag i manaden.'
+FROM calc_vantande
+GROUP BY matperiod, sjukhusnamn
+
+UNION ALL
+-- Väntetidsfördelning (6 intervall)
+SELECT op_manad, sjukhusnamn,
+  '  Intervall 0-30 dagar',
+  CAST(COUNT(CASE WHEN vantetid_intervall='0-30' THEN 1 END) AS DECIMAL(10,0)),
+  'st', NULL, NULL,
+  'vantetider.se > Utokad uppfoljning > Valj region + Ogon + Op > Fordelning',
+  'Stapeldiagrammet visar antal per intervall.'
+FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn
+UNION ALL
+SELECT op_manad, sjukhusnamn,
+  '  Intervall 31-60 dagar',
+  CAST(COUNT(CASE WHEN vantetid_intervall='31-60' THEN 1 END) AS DECIMAL(10,0)),
+  'st', NULL, NULL, '', ''
+FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn
+UNION ALL
+SELECT op_manad, sjukhusnamn,
+  '  Intervall 61-90 dagar',
+  CAST(COUNT(CASE WHEN vantetid_intervall='61-90' THEN 1 END) AS DECIMAL(10,0)),
+  'st', NULL, NULL, '', ''
+FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn
+UNION ALL
+SELECT op_manad, sjukhusnamn,
+  '  Intervall 91-120 dagar',
+  CAST(COUNT(CASE WHEN vantetid_intervall='91-120' THEN 1 END) AS DECIMAL(10,0)),
+  'st', NULL, NULL, '', ''
+FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn
+UNION ALL
+SELECT op_manad, sjukhusnamn,
+  '  Intervall 121-180 dagar',
+  CAST(COUNT(CASE WHEN vantetid_intervall='121-180' THEN 1 END) AS DECIMAL(10,0)),
+  'st', NULL, NULL, '', ''
+FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn
+UNION ALL
+SELECT op_manad, sjukhusnamn,
+  '  Intervall >180 dagar',
+  CAST(COUNT(CASE WHEN vantetid_intervall='>180' THEN 1 END) AS DECIMAL(10,0)),
+  'st', NULL, NULL, '', ''
+FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn
+
+UNION ALL
+-- Per kön
+SELECT op_manad, sjukhusnamn,
+  'Median man',
+  CAST(MEDIAN(CASE WHEN kon='1' THEN vantetid_dagar END) AS DECIMAL(5,1)),
+  'dagar',
+  COUNT(CASE WHEN kon='1' THEN 1 END), NULL,
+  'vantetider.se > Utokad uppfoljning > Valj region + Ogon + Op > Filtrera pa kon',
+  'Valj Man/Kvinna i dropdown.'
+FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn
+UNION ALL
+SELECT op_manad, sjukhusnamn,
+  'Median kvinna',
+  CAST(MEDIAN(CASE WHEN kon='2' THEN vantetid_dagar END) AS DECIMAL(5,1)),
+  'dagar',
+  COUNT(CASE WHEN kon='2' THEN 1 END), NULL, '', ''
+FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn;
+
+
+-- ──────────────────────────────────────────────
+-- 05: dq_rapport_data (ÄNDRAD i v2.4)
+--
+-- Ändring: DQ6-raderna inkluderar nu sjukhusnamn
+-- via CONCAT så att varje sjukhus syns separat.
+-- Anledning: VGR visade att per-sjukhus DQ6 behövs
+-- för att se vilka sjukhus som avviker.
+-- ──────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW dq_rapport_data AS
+-- DQ0: Existens
+SELECT 'DQ0' AS dq, 'existens' AS kontroll, 'src_genomford' AS objekt,
+  CAST(COUNT(*) AS VARCHAR) AS varde,
+  CASE WHEN COUNT(*) > 0 THEN 'OK' ELSE 'FEL' END AS status
+FROM src_genomford
+UNION ALL
+SELECT 'DQ0', 'existens', 'src_vantande',
+  CAST(COUNT(*) AS VARCHAR),
+  CASE WHEN COUNT(*) > 0 THEN 'OK' ELSE 'FEL' END
+FROM src_vantande
+
+UNION ALL
+-- DQ1: Null-kontroll (genomförda)
+SELECT 'DQ1', 'null_genomford', 'beslut_datum',
+  CAST(SUM(CASE WHEN beslut_datum IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
+  CASE WHEN SUM(CASE WHEN beslut_datum IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
+FROM src_genomford
+UNION ALL
+SELECT 'DQ1', 'null_genomford', 'start_datum',
+  CAST(SUM(CASE WHEN start_datum IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
+  CASE WHEN SUM(CASE WHEN start_datum IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
+FROM src_genomford
+UNION ALL
+SELECT 'DQ1', 'null_genomford', 'kva_kod',
+  CAST(SUM(CASE WHEN kva_kod IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
+  CASE WHEN SUM(CASE WHEN kva_kod IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
+FROM src_genomford
+UNION ALL
+SELECT 'DQ1', 'null_genomford', 'vardgaranti',
+  CAST(SUM(CASE WHEN vardgaranti IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
+  CASE WHEN SUM(CASE WHEN vardgaranti IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
+FROM src_genomford
+UNION ALL
+SELECT 'DQ1', 'null_genomford', 'kon',
+  CAST(SUM(CASE WHEN kon IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
+  CASE WHEN SUM(CASE WHEN kon IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
+FROM src_genomford
+UNION ALL
+SELECT 'DQ1', 'null_genomford', 'fodelsear',
+  CAST(SUM(CASE WHEN fodelsear IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
+  CASE WHEN SUM(CASE WHEN fodelsear IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
+FROM src_genomford
+
+UNION ALL
+-- DQ1: Null-kontroll (väntande)
+SELECT 'DQ1', 'null_vantande', 'beslut_datum',
+  CAST(SUM(CASE WHEN beslut_datum IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
+  CASE WHEN SUM(CASE WHEN beslut_datum IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
+FROM src_vantande
+UNION ALL
+SELECT 'DQ1', 'null_vantande', 'kva_kod',
+  CAST(SUM(CASE WHEN kva_kod IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
+  CASE WHEN SUM(CASE WHEN kva_kod IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
+FROM src_vantande
+
+UNION ALL
+-- DQ2: Domänkontroll
+SELECT 'DQ2', 'doman', 'kva_ej_i_ref',
+  CAST(COUNT(*) AS VARCHAR),
+  CASE WHEN COUNT(*) = 0 THEN 'OK' ELSE 'FEL' END
+FROM src_genomford g LEFT JOIN ref_kva_katarakt r ON g.kva_kod = r.kva_kod
+WHERE r.kva_kod IS NULL AND g.kva_kod IS NOT NULL
+UNION ALL
+SELECT 'DQ2', 'doman', 'regionkod_ej_51',
+  CAST(SUM(CASE WHEN regionkod <> '51' THEN 1 ELSE 0 END) AS VARCHAR),
+  CASE WHEN SUM(CASE WHEN regionkod <> '51' THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
+FROM src_genomford
+UNION ALL
+SELECT 'DQ2', 'doman', 'mvo_ej_511',
+  CAST(SUM(CASE WHEN mvo_kod <> '511' THEN 1 ELSE 0 END) AS VARCHAR),
+  CASE WHEN SUM(CASE WHEN mvo_kod <> '511' THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
+FROM src_genomford
+
+UNION ALL
+-- DQ3: Intervallkontroll
+SELECT 'DQ3', 'intervall', 'negativ_vantetid',
+  CAST(SUM(CASE WHEN vantetid_dagar < 0 THEN 1 ELSE 0 END) AS VARCHAR),
+  CASE WHEN SUM(CASE WHEN vantetid_dagar < 0 THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
+FROM calc_vantetid_genomford
+UNION ALL
+SELECT 'DQ3', 'intervall', 'orimligt_fodelsear',
+  CAST(SUM(CASE WHEN fodelsear < 1920 OR fodelsear > 2026 THEN 1 ELSE 0 END) AS VARCHAR),
+  CASE WHEN SUM(CASE WHEN fodelsear < 1920 OR fodelsear > 2026 THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
+FROM calc_vantetid_genomford
+UNION ALL
+SELECT 'DQ3', 'intervall', 'vantande_med_start',
+  CAST(SUM(CASE WHEN start_datum IS NOT NULL THEN 1 ELSE 0 END) AS VARCHAR),
+  CASE WHEN SUM(CASE WHEN start_datum IS NOT NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
+FROM src_vantande
+
+UNION ALL
+-- DQ4: Ifyllnadsgrad (genomförda)
+SELECT 'DQ4', 'ifyllnad_genomford', 'beslut_datum',
+  CAST(CAST(CAST(SUM(CASE WHEN beslut_datum > DATE '1900-01-01' THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
+FROM src_genomford
+UNION ALL
+SELECT 'DQ4', 'ifyllnad_genomford', 'medicinskt_maldatum',
+  CAST(CAST(CAST(SUM(CASE WHEN medicinskt_maldatum > DATE '1900-01-01' THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
+FROM src_genomford
+UNION ALL
+SELECT 'DQ4', 'ifyllnad_genomford', 'avvikelsekod',
+  CAST(CAST(CAST(SUM(CASE WHEN avvikelsekod IS NOT NULL THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
+FROM src_genomford
+UNION ALL
+SELECT 'DQ4', 'ifyllnad_genomford', 'lkf',
+  CAST(CAST(CAST(SUM(CASE WHEN lkf <> '9999' AND lkf <> '0000' THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
+FROM src_genomford
+UNION ALL
+SELECT 'DQ4', 'ifyllnad_genomford', 'hsaid_listning',
+  CAST(CAST(CAST(SUM(CASE WHEN hsaid_listning IS NOT NULL THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
+FROM src_genomford
+UNION ALL
+SELECT 'DQ4', 'ifyllnad_genomford', 'remiss_datum',
+  CAST(CAST(CAST(SUM(CASE WHEN remiss_datum > DATE '1900-01-01' THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
+FROM src_genomford
+UNION ALL
+SELECT 'DQ4', 'ifyllnad_genomford', 'remittent_hsaid',
+  CAST(CAST(CAST(SUM(CASE WHEN remittent_hsaid IS NOT NULL THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
+FROM src_genomford
+
+UNION ALL
+-- DQ4: Ifyllnadsgrad (väntande)
+SELECT 'DQ4', 'ifyllnad_vantande', 'beslut_datum',
+  CAST(CAST(CAST(SUM(CASE WHEN beslut_datum > DATE '1900-01-01' THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
+FROM src_vantande
+UNION ALL
+SELECT 'DQ4', 'ifyllnad_vantande', 'medicinskt_maldatum',
+  CAST(CAST(CAST(SUM(CASE WHEN medicinskt_maldatum > DATE '1900-01-01' THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
+FROM src_vantande
+UNION ALL
+SELECT 'DQ4', 'ifyllnad_vantande', 'remiss_datum',
+  CAST(CAST(CAST(SUM(CASE WHEN remiss_datum > DATE '1900-01-01' THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
+FROM src_vantande
+
+UNION ALL
+-- DQ6: Rimlighet (ÄNDRAD i v2.4 — nu per sjukhus)
+SELECT 'DQ6', 'rimlighet',
+  CONCAT('andel_inom_90 (', sjukhusnamn, ')'),
+  CAST(CAST(andel_inom_90 * 100 AS DECIMAL(5,1)) AS VARCHAR),
+  CASE WHEN andel_inom_90 >= 0.50 AND andel_inom_90 <= 1.0 THEN 'OK' ELSE 'FEL' END
+FROM res_kpi_manad WHERE andel_inom_90 IS NOT NULL
+UNION ALL
+SELECT 'DQ6', 'rimlighet',
+  CONCAT('median_vantetid (', sjukhusnamn, ')'),
+  CAST(median_vantetid AS VARCHAR),
+  CASE WHEN median_vantetid >= 1 AND median_vantetid <= 365 THEN 'OK' ELSE 'FEL' END
+FROM res_kpi_manad WHERE median_vantetid IS NOT NULL;
+
+
+-- ============================================================
+-- KÖRORDNING:
+--   1. ref_kva_katarakt
+--   2. ref_avvikelsekoder
+--   3. ref_filter_region        ← ⚠️ ÄNDRA lanskod per region
+--   4. src_genomford             ← ⚠️ ÄNDRA kolumner + tabell
+--   5. src_vantande              ← ⚠️ ÄNDRA kolumner + tabell
+--   6. calc_vantetid_genomford
+--   7. calc_vantande
+--   8. res_kpi_manad
+--   9. res_kpi_per_yrke + _kontaktform + _bokning + _remittent + _kommun
+--  10. res_genomford_detalj + res_vantande_detalj
+--  11. verif_jamforelse
+--  12. dq_rapport_data
+--
+-- VERIFIERING:
+--   SELECT * FROM dq_rapport_data;
+--   → Alla DQ0-DQ3 och DQ5 ska vara OK
+--   → DQ4 visar ifyllnadsgrad (INFO)
+--   → DQ6 visar rimlighet per sjukhus
+--
+--   SELECT * FROM verif_jamforelse ORDER BY sjukhus, kpi;
+--   → Jämför mot vantetider.se per sjukhus
+--
+--   Om siffror avviker: prova att lägga till
+--   WHERE is_hemregion = 1 i res_kpi_manad
+--   för att se om utomläningar förklarar skillnaden.
+-- ============================================================
