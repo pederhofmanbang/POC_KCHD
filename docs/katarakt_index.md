@@ -1,7 +1,7 @@
 # KCHD Katarakt VGR — Komplett index
 ## Alla filer, beslut och status för POC:en
 
-**Senast uppdaterad:** 2026-03-26
+**Senast uppdaterad:** 2026-03-28 (v2.4)
 **Vårdutbud:** Katarakt (gråstarr), aktivitetskod 51101
 **Region:** Västra Götalandsregionen (VGR), regionkod 51
 **System:** Denodo 8.0+ (VQL), SSIS (Microsoft)
@@ -14,15 +14,19 @@
 |-----|-----|----------|--------|---------|
 | — | vantetid_katarakt_guide.jsx | Huvudguide v2.3, 8 kodblock, 13 vyer, 6 flikar | ✅ Levererat | Ja |
 | — | komplettering_detaljvyer.vql | src_vantande + 2 detaljvyer (buggfix) | ✅ Levererat | Ja |
-| 1a | verifieringspaket.vql | verif_jamforelse + verif_stickprov (2 vyer) | ✅ Klar | Ja (2026-03-26) |
-| 1b | kvalitetspaket.vql | dq0–dq6 + dq_rapport_data (8 vyer, 373 rader) | ✅ Klar | Ja (2026-03-26) |
+| **—** | **katarakt_vantetid_v2.4.vql** | **Komplett v2.4: 17 vyer, 3 nya (ref_avvikelsekoder, ref_filter_region, per-dim utökade), fixad patientresa, sjukhus i verif/DQ6, is_hemregion** | **✅ Klar, testad** | **Ej skickat** |
+| 1a | verifieringspaket.vql | verif_jamforelse + verif_stickprov (2 vyer) | ✅ Klar | Ja (2026-03-26) — ersätts av v2.4 |
+| 1b | kvalitetspaket.vql | dq0–dq6 + dq_rapport_data (8 vyer, 373 rader) | ✅ Klar | Ja (2026-03-26) — ersätts av v2.4 |
 | 1b | dq_rapport.html | Lokal DQ-rapport, paste-to-render, multi-separator | ✅ Klar | Ja (2026-03-26) |
-| 2 | fhir_paket.vql | ref_fhir_system + fhir_measure_report v3 (2 vyer, alla 16 KPI:er × alla dimensioner, 30 SELECT-block) | ✅ Klar | Ej skickat |
-| 3 | fhir_serializer.py | Python-referensimplementation — läser TSV, producerar FHIR Bundle JSON | ✅ Klar | Ej skickat |
-| 3 | fhir_serializer_spec.md | C#-projektspec: kolumner, pseudokod, NuGet, SSIS-integration, testning | ✅ Klar | Ej skickat |
-| 3 | fhir_bundle_example.json | Referens-JSON: 12 MeasureReports, 214 KB, validerad | ✅ Klar | Ej skickat |
-| 3 | KchdFhirSerializer/ (C#) | 6 filer skapade (.NET 8, Hl7.Fhir.R4). EJ kompilerat, EJ testat — kräver dotnet build lokalt | ⚠️ Ej verifierat | I repo |
+| 2 | fhir_paket.vql | ref_fhir_system + fhir_measure_report v3.1 (2 vyer, alla 16 KPI:er × alla dimensioner, 30 SELECT-block) | ⚠️ 3 fixar behövs | Ej skickat — levereras med fas 3 |
+| 3 | KchdFhirSerializer/ (C#) | .NET 8 + Hl7.Fhir.R4 (Firely SDK). Läser TSV/ODBC, producerar FHIR Bundle JSON | ✅ Verifierad | Ej skickat — levereras med fas 2 |
+| 3 | fhir_serializer.py | Python-referensimplementation — läser TSV, producerar FHIR Bundle JSON | ✅ Klar | I repo (intern referens) |
+| 3 | fhir_bundle_example.json | Referens-JSON: 12 MeasureReports, 214 KB, validerad | ✅ Klar | I repo (intern referens) |
 | 4 | fhir_radniva.vql + C# | Procedure/ServiceRequest + SSIS | 📋 Ej påbörjat | — |
+
+**Fas 2+3 levereras som ett paket.** Fas 2 (VQL) utan fas 3 (C#) ger VGR en tabell de inte kan göra något med. Hela kedjan — VQL → C#-serialiserare → FHIR JSON — levereras när vi vet att VGR:s miljö stödjer .NET 8 (eller vi publicerar som self-contained .exe).
+
+**v2.4 ersätter alla tidigare VQL-filer.** katarakt_vantetid_v2.4.vql innehåller alla 17 vyer (fas 0, 1a, 1b) i en fil. De separata filerna (komplettering_detaljvyer.vql, verifieringspaket.vql, kvalitetspaket.vql) behövs inte längre.
 
 ## 2. DEMO-ARTEFAKTER (visa VGR/styrgrupp)
 
@@ -46,6 +50,8 @@
 | fhir_serializer.py | TSV → FHIR R4 Bundle JSON (referensimplementation) | `python3 fhir_serializer.py fhir_resultat.tsv -o bundle.json -v` |
 | fhir_bundle_example.json | Referens-JSON: 12 MeasureReports, validerad | Genererad av fhir_serializer.py |
 | pipeline_runner.py | Kör hela kedjan steg 1-8. Producerar 9 filer i resultat/ | `python3 pipeline_runner.py testdata.csv resultat/` |
+| test_csharp.sh | Bygger + kör C#-serialiseraren, jämför mot Python-referens | `bash test_csharp.sh` |
+| verify_fhir_structure.py | Strukturell validering av FHIR Bundle JSON | `python3 verify_fhir_structure.py bundle.json` |
 
 ### Pipeline-output (resultat/)
 
@@ -119,6 +125,13 @@ Genereras av `pipeline_runner.py` — dessa filer återskapas vid varje körning
 | D16 | Radnivå-FHIR verifierat mot R4-spec — 5 felaktiga mappningar korrigerade | vardgaranti/yrkeskategori/lkf/ankomst_datum/beslut_datum. 7 variabler kräver Extension. Se fhir_mappning_analys.md | 2026-03-26 |
 | D17 | 4 per-patient-beräkningar → FHIR Observation (ej rådatum) till hubben | Användarvalet: hubben tar emot beräknade värden, inte datum. Regionen räknar, hubben aggregerar. Observation.valueQuantity + derivedFrom. Verifierat R4. Fas 4. | 2026-03-26 |
 | D18 | Pipeline-runner kör hela kedjan steg 1-8 i ett kommando | Samma steg som VGR kör i produktion, fast med testdata. Producerar 9 inspekterbara filer. | 2026-03-26 |
+| D19 | Fas 2+3 levereras som ett paket, aldrig separat | VQL utan C# ger VGR en tabell de inte kan göra något med. Hela kedjan levereras samlat. | 2026-03-28 |
+| D20 | C# verifierad i GitHub Codespace (.NET 8) | dotnet build OK, 440 rader → 12 MeasureReports, semantisk match mot Python-referens | 2026-03-28 |
+| D21 | v2.4: ref_filter_region för utomläningsflagga | Konfigurerbar länskod, is_hemregion-flagga i calc — filtrerar INTE, bara flaggar. Kod behöver inte ändras oavsett om utomläningar förklarar avvikelsen eller ej. | 2026-03-28 |
+| D22 | v2.4: ref_avvikelsekoder dokumenterar koderna | Referensvy som ref_kva_katarakt. XSD-format (1/2/3), ⚠️-kommentarer i alla vyer om textformat. | 2026-03-28 |
+| D23 | v2.4: per-dim-vyer utökade med alla KPI:er | Alla 5 per-dim-vyer har nu samma kolumner som res_kpi_manad (andel, medel, patientresa, sjukhusinfo). Krävdes för att FHIR-paketet ska producera alla 5 KPI:er per dimension. | 2026-03-28 |
+| D24 | v2.4: sjukhusnamn i verif_jamforelse + DQ6 | VGR:s feedback — behövs för att jämföra per sjukhus mot vantetider.se. | 2026-03-28 |
+| D25 | PvV exkluderas för genomförda, MoV inkluderas — bekräftat mot SKR-dokumentation | SKR:s dokumentation: "MoV kan exkluderas vid redovisning av väntande" men nämner inte exkludering för genomförda. Vår kod korrekt. | 2026-03-28 |
 
 ## 8. ÖPPNA PUNKTER
 
@@ -128,9 +141,12 @@ Genereras av `pipeline_runner.py` — dessa filer återskapas vid varje körning
 | U2 | HSA-id: urn:oid:1.2.752.129.2.1.4.1 | Trolig korrekt — bevaka Inera |
 | U3 | SKR aktivitetskod: https://kchd.se/fhir/CodeSystem/skr-aktivitetskod | Provisorisk |
 | ~~U6~~ | ~~Medelväntetid i Measure 2~~ | ✅ Löst — D12, group_code='medel_vantetid' |
-| U7 | Fas 3: SSIS-konfiguration — vilken version? | Kräver input från VGR |
-| U8 | Fas 4: FHIR Procedure/ServiceRequest — exakt mappning | Väntar på fas 2+3 |
+| U7 | Fas 3: .NET 8 runtime + SSIS-version hos VGR | Mail redo att skicka. Om .NET 8 saknas → publicera som self-contained .exe |
+| U8 | Fas 4: FHIR Procedure/ServiceRequest — exakt mappning | Väntar på fas 2+3 i produktion |
 | ~~U9~~ | ~~Per-dimensioner för median/medel/patientresa~~ | ✅ Löst — alla 5 mått per dimension byggt i v3 |
+| U10 | fhir_paket.vql v3.1: applicera 3 fixar | Se FHIR_PAKET_FIXAR.md — kolumnnamn i VQL, TSV-alias oförändrade |
+| U11 | VGR utomläningstest: AND LEFT(lkf,2) = '14' | Väntar på VGR:s svar — förklarar troligen avvikelse mot vantetider.se |
+| U12 | Pusha v2.4 + fixat fhir_paket.vql till GitHub | Allt klart, väntar på paketering |
 
 ## 9. SYSTEM-URI:ER (ref_fhir_system)
 
@@ -146,35 +162,97 @@ Genereras av `pipeline_runner.py` — dessa filer återskapas vid varje körning
 
 ---
 
-## 10. VYLISTA I DENODO (25 vyer totalt)
+## 10. VYLISTA I DENODO (17 vyer i v2.4 + 2 FHIR-vyer)
 
-| Lager | Vy | Fas | Status |
-|-------|-----|-----|--------|
-| 00 | ref_kva_katarakt | — | ✅ Live hos VGR |
-| 01 | src_genomford | — | ✅ Live |
-| 01 | src_vantande | — | ✅ Live |
-| 02 | calc_vantetid_genomford | — | ✅ Live |
-| 02 | calc_vantande | — | ✅ Live |
-| 03 | res_kpi_manad | — | ✅ Live |
-| 03 | res_kpi_per_yrke | — | ✅ Live |
-| 03 | res_kpi_per_kontaktform | — | ✅ Live |
-| 03 | res_kpi_per_bokning | — | ✅ Live |
-| 03 | res_kpi_per_remittent | — | ✅ Live |
-| 03 | res_kpi_per_kommun | — | ✅ Live |
-| 03 | res_genomford_detalj | — | ✅ Live |
-| 03 | res_vantande_detalj | — | ✅ Live |
-| 1a | verif_jamforelse | 1a | ✅ Skickat |
-| 1a | verif_stickprov | 1a | ✅ Skickat |
-| 1b | dq0_existens | 1b | ✅ Skickat |
-| 1b | dq1_null | 1b | ✅ Skickat |
-| 1b | dq2_doman | 1b | ✅ Skickat |
-| 1b | dq3_intervall | 1b | ✅ Skickat |
-| 1b | dq4_ifyllnadsgrad | 1b | ✅ Skickat |
-| 1b | dq5_korsvalidering | 1b | ✅ Skickat |
-| 1b | dq6_rimlighet | 1b | ✅ Skickat |
-| 1b | dq_rapport_data | 1b | ✅ Skickat |
-| 2 | ref_fhir_system | 2 | ✅ Klar, ej skickat |
-| 2 | fhir_measure_report | 2 | ✅ Klar, ej skickat |
+| Lager | Vy | Fas | v2.4 ändring | Status |
+|-------|-----|-----|-------------|--------|
+| 00 | ref_kva_katarakt | — | Oförändrad | ✅ Live hos VGR |
+| 00 | **ref_avvikelsekoder** | — | **NY** — dokumenterar kod 1/2/3 | ✅ Klar |
+| 00 | **ref_filter_region** | — | **NY** — konfigurerbar länskod per region | ✅ Klar |
+| 01 | src_genomford | — | Oförändrad (mall) | ✅ Live |
+| 01 | src_vantande | — | Oförändrad (mall) | ✅ Live |
+| 02 | calc_vantetid_genomford | — | **Ändrad** — +is_hemregion, fixad patientresa-kommentar | ✅ Klar, testad |
+| 02 | calc_vantande | — | Oförändrad | ✅ Live |
+| 03 | res_kpi_manad | — | **Ändrad** — +sjukhusnamn, +hsaid_region i GROUP BY | ✅ Klar, testad |
+| 03 | res_kpi_per_yrke | — | **Utökad** — alla KPI:er + sjukhusinfo | ✅ Klar, testad |
+| 03 | res_kpi_per_kontaktform | — | **Utökad** | ✅ Klar, testad |
+| 03 | res_kpi_per_bokning | — | **Utökad** | ✅ Klar, testad |
+| 03 | res_kpi_per_remittent | — | **Utökad** | ✅ Klar, testad |
+| 03 | res_kpi_per_kommun | — | **Utökad** | ✅ Klar, testad |
+| 03 | res_genomford_detalj | — | **Ändrad** — +is_hemregion | ✅ Klar |
+| 03 | res_vantande_detalj | — | Oförändrad | ✅ Live |
+| 04 | verif_jamforelse | 1a | **Ändrad** — +sjukhusnamn i alla block | ✅ Klar |
+| 04 | dq_rapport_data | 1b | **Ändrad** — DQ6 per sjukhus | ✅ Klar |
+| 05 | ref_fhir_system | 2 | Oförändrad | ✅ Klar, ej skickat |
+| 05 | fhir_measure_report | 2 | **3 fixar behövs** (kolumnnamn) | ⚠️ U10 |
+
+---
+
+## 11. STEGEN I PIPELINE (pipeline_runner.py)
+
+Exakt samma steg som VGR kör — enda skillnaden är att VGR byter testdata mot sin Denodo-källa.
+
+| Steg | Vad händer | In | Ut | VGR-motsvarighet |
+|------|-----------|-----|-----|-----------------|
+| 1 | Läs rådata | CSV (35 kolumner) | steg1_radata.tsv | Denodo-basvy |
+| 2 | Filtrera katarakt | 100 rader | 70 genomförda + 30 väntande | src_genomford + src_vantande |
+| 3 | Beräkna väntetider | 70 genomförda | 70 rader × 4 beräkningar | calc_vantetid_genomford |
+| 4 | Aggregera KPI:er | 70 beräknade | 20 totaler + 84 per-dimension | res_kpi_manad + res_kpi_per_* |
+| 5 | Kvalitetskontroll | Beräknade rader | 10 DQ-kontroller, alla OK | dq0–dq6 |
+| 6 | FHIR-tabell | KPI:er | 440 FHIR-rader | fhir_measure_report (VQL) |
+| 7 | FHIR JSON | FHIR-tabell | 12 MeasureReports (214 KB) | KchdFhirSerializer (C#) ✅ Verifierad |
+| 8 | Skicka till hubb | FHIR Bundle | Kvittens: 200 OK | REST API POST |
+
+**Steg 7:** Python-referensen (`fhir_serializer.py`) och C#-versionen (`KchdFhirSerializer`) producerar identisk output. Verifierat 2026-03-28 i GitHub Codespace.
+
+---
+
+## 12. GITHUB-SYNK (POC_KCHD)
+
+**Repo:** https://github.com/pederhofmanbang/POC_KCHD
+**Senaste push:** 2026-03-28 (C#-serialiserare verifierad + testverktyg)
+**Väntar på push:** v2.4 VQL + fixat fhir_paket.vql + uppdaterad index
+
+Rutin: säg "paketera för GitHub" → jag ger dig en ny tar.gz med ändrade filer → du laddar upp via github.com → Add file → Upload files.
+
+| Fil i repo | Senast ändrad | I repot? | v2.4 ändring |
+|-----------|---------------|----------|-------------|
+| README.md | 2026-03-28 | ✅ | — |
+| .gitignore | 2026-03-26 | ✅ | — |
+| **vql/katarakt_vantetid_v2.4.vql** | **2026-03-28** | **⬆️ NY** | **Komplett: alla 17 vyer i en fil** |
+| vql/fhir_paket.vql | 2026-03-26 | ✅ | **⬆️ 3 fixar (U10)** |
+| vql/komplettering_detaljvyer.vql | 2026-03-26 | ✅ | Ersätts av v2.4 |
+| vql/verifieringspaket.vql | 2026-03-26 | ✅ | Ersätts av v2.4 |
+| vql/kvalitetspaket.vql | 2026-03-26 | ✅ | Ersätts av v2.4 |
+| python/pipeline_runner.py | 2026-03-26 | ✅ |
+| python/fhir_serializer.py | 2026-03-26 | ✅ |
+| python/test_dq.py | 2026-03-26 | ✅ |
+| python/test_fhir.py | 2026-03-26 | ✅ |
+| python/build_dq_rapport.py | 2026-03-26 | ✅ |
+| docs/katarakt_index.md | 2026-03-28 | ⬆️ Uppdateras |
+| docs/fhir_mappning_analys.md | 2026-03-26 | ✅ |
+| docs/fhir_mappningsregister.md | 2026-03-26 | ✅ |
+| docs/fhir_serializer_spec.md | 2026-03-26 | ✅ |
+| docs/prompt_fhir_mappning.md | 2026-03-26 | ✅ |
+| docs/dq_rapport.html | 2026-03-26 | ✅ |
+| docs/fhir_bundle_example.json | 2026-03-26 | ✅ |
+| docs/CLAUDE_CODE_PROMPT_CSHARP.md | 2026-03-26 | ✅ |
+| demo/vantetid_katarakt_guide.jsx | 2026-03-26 | ✅ |
+| demo/testresultat_komplett.jsx | 2026-03-26 | ✅ |
+| demo/vgr_presentation.jsx | 2026-03-26 | ✅ |
+| demo/verifiering_demo.jsx | 2026-03-26 | ✅ |
+| demo/katarakt_dashboard.jsx | 2026-03-26 | ✅ |
+| demo/plan_katarakt_fas2.jsx | 2026-03-26 | ✅ |
+| demo/repo_struktur_intern.jsx | 2026-03-26 | ✅ |
+| testdata/katarakt_testdata_100__1__VGR.csv | 2026-03-26 | ✅ |
+| csharp/KchdFhirSerializer/KchdFhirSerializer.csproj | 2026-03-28 | ✅ |
+| csharp/KchdFhirSerializer/Program.cs | 2026-03-28 | ✅ |
+| csharp/KchdFhirSerializer/DenodoReader.cs | 2026-03-28 | ✅ |
+| csharp/KchdFhirSerializer/MeasureReportBuilder.cs | 2026-03-28 | ✅ |
+| csharp/KchdFhirSerializer/FhirValidator.cs | 2026-03-28 | ✅ |
+| csharp/KchdFhirSerializer/appsettings.json | 2026-03-26 | ✅ |
+| csharp/test_csharp.sh | 2026-03-28 | ✅ |
+| csharp/verify_fhir_structure.py | 2026-03-28 | ✅ |
 
 ---
 
@@ -194,6 +272,9 @@ Om du (Claude) tappar kontext:
 **Snabbtest:** `python3 pipeline_runner.py katarakt_testdata_100__1__VGR.csv resultat/`
 Om det avslutas med "HELA KEDJAN GRÖN" fungerar allt.
 
+**C#-snabbtest:** `cd csharp && bash test_csharp.sh`
+Bygger C#, kör mot testdata, jämför mot Python-referens.
+
 **Transkript från tidigare sessioner:**
 - /mnt/transcripts/2026-03-26-12-04-18-kchd-katarakt-vgr-fhir-pipeline.txt
 - /mnt/transcripts/2026-03-25-23-00-23-kchd-katarakt-vql-fhir-pipeline.txt
@@ -202,64 +283,17 @@ Om det avslutas med "HELA KEDJAN GRÖN" fungerar allt.
 
 ---
 
-## 11. STEGEN I PIPELINE (pipeline_runner.py)
+## 13. NÄSTA STEG
 
-Exakt samma steg som VGR kör — enda skillnaden är att VGR byter testdata mot sin Denodo-källa.
-
-| Steg | Vad händer | In | Ut | VGR-motsvarighet |
-|------|-----------|-----|-----|-----------------|
-| 1 | Läs rådata | CSV (35 kolumner) | steg1_radata.tsv | Denodo-basvy |
-| 2 | Filtrera katarakt | 100 rader | 70 genomförda + 30 väntande | src_genomford + src_vantande |
-| 3 | Beräkna väntetider | 70 genomförda | 70 rader × 4 beräkningar | calc_vantetid_genomford |
-| 4 | Aggregera KPI:er | 70 beräknade | 20 totaler + 84 per-dimension | res_kpi_manad + res_kpi_per_* |
-| 5 | Kvalitetskontroll | Beräknade rader | 10 DQ-kontroller, alla OK | dq0–dq6 |
-| 6 | FHIR-tabell | KPI:er | 440 FHIR-rader | fhir_measure_report (VQL) |
-| 7 | FHIR JSON | FHIR-tabell | 12 MeasureReports (214 KB) | C#/SSIS (KCHD bygger) |
-| 8 | Skicka till hubb | FHIR Bundle | Kvittens: 200 OK | REST API POST |
-
-**OBS:** Steg 7 körs i pipeline_runner.py av fhir_serializer.py (Python). I produktion ska detta göras av C#/SSIS — den koden är ännu inte byggd (se §1, rad "KchdFhirSerializer"). KCHD bygger den.
-
----
-
-## 12. GITHUB-SYNK (POC_KCHD)
-
-**Repo:** https://github.com/pederhofmanbang/POC_KCHD
-**Senaste push:** 2026-03-26 (initial + C#-serialiserare)
-
-Rutin: säg "paketera för GitHub" → jag ger dig en ny tar.gz med ändrade filer → du laddar upp via github.com → Add file → Upload files.
-
-| Fil i repo | Senast ändrad | I repot? |
-|-----------|---------------|----------|
-| README.md | 2026-03-26 | ✅ |
-| .gitignore | 2026-03-26 | ✅ |
-| vql/komplettering_detaljvyer.vql | 2026-03-26 | ✅ |
-| vql/verifieringspaket.vql | 2026-03-26 | ✅ |
-| vql/kvalitetspaket.vql | 2026-03-26 | ✅ |
-| vql/fhir_paket.vql | 2026-03-26 | ✅ |
-| python/pipeline_runner.py | 2026-03-26 | ✅ |
-| python/fhir_serializer.py | 2026-03-26 | ✅ |
-| python/test_dq.py | 2026-03-26 | ✅ |
-| python/test_fhir.py | 2026-03-26 | ✅ |
-| python/build_dq_rapport.py | 2026-03-26 | ✅ |
-| docs/katarakt_index.md | 2026-03-26 | ✅ |
-| docs/fhir_mappning_analys.md | 2026-03-26 | ✅ |
-| docs/fhir_mappningsregister.md | 2026-03-26 | ✅ |
-| docs/fhir_serializer_spec.md | 2026-03-26 | ✅ |
-| docs/prompt_fhir_mappning.md | 2026-03-26 | ✅ |
-| docs/dq_rapport.html | 2026-03-26 | ✅ |
-| docs/fhir_bundle_example.json | 2026-03-26 | ✅ |
-| docs/CLAUDE_CODE_PROMPT_CSHARP.md | 2026-03-26 | ✅ |
-| demo/vantetid_katarakt_guide.jsx | 2026-03-26 | ✅ |
-| demo/testresultat_komplett.jsx | 2026-03-26 | ✅ |
-| demo/vgr_presentation.jsx | 2026-03-26 | ✅ |
-| demo/verifiering_demo.jsx | 2026-03-26 | ✅ |
-| demo/katarakt_dashboard.jsx | 2026-03-26 | ✅ |
-| demo/plan_katarakt_fas2.jsx | 2026-03-26 | ✅ |
-| demo/repo_struktur_intern.jsx | 2026-03-26 | ✅ |
-| testdata/katarakt_testdata_100__1__VGR.csv | 2026-03-26 | ✅ |
-| csharp/KchdFhirSerializer/KchdFhirSerializer.csproj | 2026-03-26 | ✅ |
-| csharp/KchdFhirSerializer/Program.cs | 2026-03-26 | ✅ |
-| csharp/KchdFhirSerializer/TsvReader.cs | 2026-03-26 | ✅ |
-| csharp/KchdFhirSerializer/MeasureReportBuilder.cs | 2026-03-26 | ✅ |
-| csharp/KchdFhirSerializer/FhirValidator.cs | 2026-03-26 | ✅ |
-| csharp/KchdFhirSerializer/appsettings.json | 2026-03-26 | ✅ |
+| Nr | Vad | Blockerar? | Status |
+|----|-----|-----------|--------|
+| 1 | **Applicera 3 fixar i fhir_paket.vql** (se FHIR_PAKET_FIXAR.md / U10) | Nej — dokumenterat | 📋 |
+| 2 | **Pusha till GitHub:** katarakt_vantetid_v2.4.vql + fixad fhir_paket.vql + index | Nej | 📋 |
+| 3 | Skicka mail till VGR: utomläningstest + patientresa-bugg | Nej — mail klart | 📧 Redo |
+| 4 | Skicka mail till VGR: fråga om .NET 8 runtime + SSIS-version | Nej — mail redo | 📧 Redo |
+| 5 | Vänta på VGR:s utomläningstest (AND LEFT(lkf,2) = '14') | Väntar på svar | ⏳ |
+| 6 | Om VGR saknar .NET 8 → publicera C# som self-contained .exe | Väntar på svar | ⏳ |
+| 7 | Leverera fas 2+3 som ett paket (VQL + C# + instruktioner) | Väntar på svar om .NET 8 | ⏳ |
+| 8 | Fas 4: radnivå-FHIR (Procedure/ServiceRequest) | Väntar på fas 2+3 i produktion | 📋 |
+| 9 | Expandera till fler regioner eller vårdutbud | Framtida | 📋 |
+| 10 | Vitalis: demo + paneldiskussion | Planeras | 📋 |
