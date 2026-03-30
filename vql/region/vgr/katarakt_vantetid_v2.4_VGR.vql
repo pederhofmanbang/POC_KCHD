@@ -1,4 +1,14 @@
 -- ============================================================
+-- KCHD Katarakt väntetidspaket v2.4 — VGR
+-- Region: Västra Götalandsregionen (regionkod 51)
+--
+-- VGR-specifikt i denna fil:
+--   src_genomford: VGR:s tabeller + kön M/K → 1/2
+--   src_vantande:  VGR:s tabeller + kön M/K → 1/2
+--
+-- Allt annat är identiskt med det generiska paketet.
+-- VGR kör denna fil rakt av — inga ändringar behövs.
+--
 -- KCHD Katarakt väntetidspaket v2.4
 -- Ändringar sedan v2.3 (levererat till VGR):
 --
@@ -91,100 +101,115 @@ CREATE OR REPLACE VIEW ref_filter_region AS
 
 
 -- ──────────────────────────────────────────────
--- 01a: src_genomford (OFÖRÄNDRAD — mall)
+-- 01a: src_genomford (VGR-anpassad)
 --
--- Kommentar om kodformat:
---   vardgaranti: XSD säger 1=JA, 2=NEJ (heltal).
---     Er källdata kan ha '1'/'2' eller 'JA'/'NEJ'.
---     Beräkningslagret (calc_vantetid_genomford)
---     förväntar sig det format ni väljer här.
---     Se kommentar i calc_vantetid_genomford.
+-- Källa: skr_tillgänglighet_skickade_utförda_kontakter
+-- Patient-id: LEFT JOIN mot import_ifd_elvis_patient_patient_daglig
 --
---   avvikelsekod: XSD säger 1/2/3 (heltal).
---     Er källdata kan ha '1'/'2'/'3' eller 'PvV'/'MoV'/'SoV'.
---     Anpassa calc_vantetid_genomford om ni byter format.
+-- Kön: VGR:s data har M/K, normaliseras till 1/2
+-- Vårdgaranti: VGR:s data har '1'/'2' (XSD-format) — ingen ändring
+-- Avvikelsekod: VGR:s data har '1'/'2' (XSD-format) — ingen ändring
 -- ──────────────────────────────────────────────
 
 CREATE OR REPLACE VIEW src_genomford AS
 SELECT
-  -- ⚠️ ÄNDRA KOLUMNNAMNEN TILL VÄNSTER
-  kontakt_id          AS vardkontakt_id,    -- ⚠️ ändra
-  pat_id              AS patient_id,        -- ⚠️ ändra
-  kon_kod             AS kon,               -- ⚠️ ändra  (XSD: 1=Man 2=Kvinna. Er data kan ha 'M'/'K')
-  fodelsar            AS fodelsear,         -- ⚠️ ändra
-  '51'                AS regionkod,         -- ⚠️ ändra per region
-  hsa_region          AS hsaid_region,      -- ⚠️ ändra
-  hsa_vardgivare      AS hsaid_vardgivare,  -- ⚠️ ändra
-  hsa_vardenhet       AS hsaid_vardenhet,   -- ⚠️ ändra
-  hsa_enhet           AS hsaid_enhet,       -- ⚠️ ändra  (NULL om saknas)
-  sjukhus_kod         AS sjukhuskod,        -- ⚠️ ändra
-  sjukhus_namn        AS sjukhusnamn,       -- ⚠️ ändra
-  mvo                 AS mvo_kod,           -- ⚠️ ändra  ('511' = Ögon)
-  '51101'             AS aktivitetskod,     -- Gråstarr (hårdkodat)
-  kva_aktivitet       AS aktivitet_kva,     -- ⚠️ ändra  (NULL om saknas)
-  icd_aktivitet       AS aktivitet_icd,     -- ⚠️ ändra  (NULL om saknas)
-  kva                 AS kva_kod,           -- ⚠️ ändra  ('CJE20' etc.)
-  yrke                AS yrkeskategori,     -- ⚠️ ändra
-  bokning             AS bokningssatt,      -- ⚠️ ändra
-  kontakttyp          AS vardkontakttyp,    -- ⚠️ ändra
-  vg_flagga           AS vardgaranti,       -- ⚠️ ändra  (XSD: '1'=JA '2'=NEJ)
-  avvikelse           AS avvikelsekod,      -- ⚠️ ändra  (XSD: '1'=PvV '2'=MoV '3'=SoV, NULL=ingen)
-  remtyp              AS remittenttyp,      -- ⚠️ ändra
-  rem_hsaid           AS remittent_hsaid,   -- ⚠️ ändra
-  remiss_id           AS remiss_id,         -- ⚠️ ändra
-  rem_datum           AS remiss_datum,      -- ⚠️ ändra
-  rem_ankomst         AS ankomst_datum,     -- ⚠️ ändra
-  beslut_datum        AS beslut_datum,      -- ⚠️ ändra  (MP1 — väntetidsstart)
-  start_datum         AS start_datum,       -- ⚠️ ändra  (MP2 — väntetidsslut)
-  med_maldatum        AS medicinskt_maldatum, -- ⚠️ ändra (MP3)
-  kommun_kod          AS lkf,               -- ⚠️ ändra  (SCB 4-siffrig: LLKK)
-  hsa_listning        AS hsaid_listning,    -- ⚠️ ändra
-  period              AS matperiod          -- ⚠️ ändra
--- ⚠️ ÄNDRA TABELLNAMNET NEDAN
-FROM ds_datalager.v_genomford_specialiserad;
+  skr_tillgänglighet_skickade_utförda_kontakter.vardkontaktid AS vardkontakt_id,
+  import_ifd_elvis_patient_patient_daglig.sjukhus_patientid_pk AS patient_id,
+  CASE WHEN skr_tillgänglighet_skickade_utförda_kontakter.kon = 'M' THEN '1'
+       WHEN skr_tillgänglighet_skickade_utförda_kontakter.kon = 'K' THEN '2'
+       ELSE skr_tillgänglighet_skickade_utförda_kontakter.kon
+  END AS kon,
+  skr_tillgänglighet_skickade_utförda_kontakter.fodelsear AS fodelsear,
+  '51' AS regionkod,
+  skr_tillgänglighet_skickade_utförda_kontakter.huvudman AS hsaid_region,
+  skr_tillgänglighet_skickade_utförda_kontakter.vardgivare AS hsaid_vardgivare,
+  skr_tillgänglighet_skickade_utförda_kontakter.vardenhet2 AS hsaid_vardenhet,
+  NULL AS hsaid_enhet,
+  skr_tillgänglighet_skickade_utförda_kontakter.vardenhet1 AS sjukhuskod,
+  skr_tillgänglighet_skickade_utförda_kontakter.vardenhet1_namn AS sjukhusnamn,
+  skr_tillgänglighet_skickade_utförda_kontakter.mvo AS mvo_kod,
+  skr_tillgänglighet_skickade_utförda_kontakter.aktivitet AS aktivitetskod,
+  NULL AS aktivitet_kva,
+  NULL AS aktivitet_icd,
+  skr_tillgänglighet_skickade_utförda_kontakter.utförd_kvå AS kva_kod,
+  skr_tillgänglighet_skickade_utförda_kontakter.yrkesgrupp AS yrkeskategori,
+  skr_tillgänglighet_skickade_utförda_kontakter.bokningssatt AS bokningssatt,
+  skr_tillgänglighet_skickade_utförda_kontakter.vardkontakt AS vardkontakttyp,
+  skr_tillgänglighet_skickade_utförda_kontakter.vardgaranti AS vardgaranti,
+  skr_tillgänglighet_skickade_utförda_kontakter.avvikelse AS avvikelsekod,
+  skr_tillgänglighet_skickade_utförda_kontakter.remittenttyp AS remittenttyp,
+  NULL AS remittent_hsaid,
+  NULL AS remiss_id,
+  skr_tillgänglighet_skickade_utförda_kontakter.remissdatum AS remiss_datum,
+  NULL AS ankomst_datum,
+  skr_tillgänglighet_skickade_utförda_kontakter.beslutaktivitet AS beslut_datum,
+  skr_tillgänglighet_skickade_utförda_kontakter.startaktivitet AS start_datum,
+  skr_tillgänglighet_skickade_utförda_kontakter.medicinsktmaldatum AS medicinskt_maldatum,
+  skr_tillgänglighet_skickade_utförda_kontakter.kommunkod AS lkf,
+  NULL AS hsaid_listning,
+  skr_tillgänglighet_skickade_utförda_kontakter.period_årmånad AS matperiod
+FROM skr_tillgänglighet_skickade_utförda_kontakter
+LEFT OUTER JOIN import_ifd_elvis_patient_patient_daglig
+  ON (skr_tillgänglighet_skickade_utförda_kontakter.personnr
+      = replace(import_ifd_elvis_patient_patient_daglig.personnummer, '-', '')
+  AND skr_tillgänglighet_skickade_utförda_kontakter.sjukhus
+      = import_ifd_elvis_patient_patient_daglig.sjukhus)
+WHERE skr_tillgänglighet_skickade_utförda_kontakter.aktivitet = '51101';
 
 
 -- ──────────────────────────────────────────────
--- 01b: src_vantande (OFÖRÄNDRAD — mall)
+-- 01b: src_vantande (VGR-anpassad)
+--
+-- Källa: skr_tillgänglighet_skickade_väntande_kontakter
+-- Patient-id: LEFT JOIN mot import_ifd_elvis_patient_patient_daglig
+--
+-- Kön: VGR:s data har M/K, normaliseras till 1/2
 -- ──────────────────────────────────────────────
 
 CREATE OR REPLACE VIEW src_vantande AS
 SELECT
-  -- ⚠️ ÄNDRA KOLUMNNAMNEN (samma princip som src_genomford)
-  kontakt_id          AS vardkontakt_id,
-  pat_id              AS patient_id,
-  kon_kod             AS kon,
-  fodelsar            AS fodelsear,
-  '51'                AS regionkod,         -- ⚠️ ändra per region
-  hsa_region          AS hsaid_region,
-  hsa_vardgivare      AS hsaid_vardgivare,
-  hsa_vardenhet       AS hsaid_vardenhet,
-  hsa_enhet           AS hsaid_enhet,
-  sjukhus_kod         AS sjukhuskod,
-  sjukhus_namn        AS sjukhusnamn,
-  mvo                 AS mvo_kod,
-  '51101'             AS aktivitetskod,
-  kva_aktivitet       AS aktivitet_kva,
-  icd_aktivitet       AS aktivitet_icd,
-  kva                 AS kva_kod,
-  yrke                AS yrkeskategori,
-  bokning             AS bokningssatt,
-  kontakttyp          AS vardkontakttyp,
-  vg_flagga           AS vardgaranti,
-  avvikelse           AS avvikelsekod,
-  remtyp              AS remittenttyp,
-  rem_hsaid           AS remittent_hsaid,
-  remiss_id           AS remiss_id,
-  rem_datum           AS remiss_datum,
-  rem_ankomst         AS ankomst_datum,
-  beslut_datum        AS beslut_datum,
-  NULL                AS start_datum,       -- Alltid NULL för väntande
-  med_maldatum        AS medicinskt_maldatum,
-  kommun_kod          AS lkf,
-  hsa_listning        AS hsaid_listning,
-  period              AS matperiod
--- ⚠️ ÄNDRA TABELLNAMNET NEDAN
-FROM ds_datalager.v_vantande_specialiserad;
+  skr_tillgänglighet_skickade_väntande_kontakter.vardkontaktid AS vardkontakt_id,
+  import_ifd_elvis_patient_patient_daglig.sjukhus_patientid_pk AS patient_id,
+  CASE WHEN skr_tillgänglighet_skickade_väntande_kontakter.kon = 'M' THEN '1'
+       WHEN skr_tillgänglighet_skickade_väntande_kontakter.kon = 'K' THEN '2'
+       ELSE skr_tillgänglighet_skickade_väntande_kontakter.kon
+  END AS kon,
+  skr_tillgänglighet_skickade_väntande_kontakter.fodelsear AS fodelsear,
+  '51' AS regionkod,
+  skr_tillgänglighet_skickade_väntande_kontakter.huvudman AS hsaid_region,
+  skr_tillgänglighet_skickade_väntande_kontakter.vardgivare AS hsaid_vardgivare,
+  skr_tillgänglighet_skickade_väntande_kontakter.vardenhet2 AS hsaid_vardenhet,
+  NULL AS hsaid_enhet,
+  skr_tillgänglighet_skickade_väntande_kontakter.vardenhet1 AS sjukhuskod,
+  skr_tillgänglighet_skickade_väntande_kontakter.vardenhet1_namn AS sjukhusnamn,
+  skr_tillgänglighet_skickade_väntande_kontakter.mvo AS mvo_kod,
+  skr_tillgänglighet_skickade_väntande_kontakter.aktivitet AS aktivitetskod,
+  NULL AS aktivitet_kva,
+  NULL AS aktivitet_icd,
+  skr_tillgänglighet_skickade_väntande_kontakter.planerad_kvå AS kva_kod,
+  skr_tillgänglighet_skickade_väntande_kontakter.yrkesgrupp AS yrkeskategori,
+  skr_tillgänglighet_skickade_väntande_kontakter.bokningssatt AS bokningssatt,
+  skr_tillgänglighet_skickade_väntande_kontakter.vardkontakt AS vardkontakttyp,
+  skr_tillgänglighet_skickade_väntande_kontakter.vardgaranti AS vardgaranti,
+  skr_tillgänglighet_skickade_väntande_kontakter.avvikelse AS avvikelsekod,
+  NULL AS remittenttyp,
+  NULL AS remittent_hsaid,
+  NULL AS remiss_id,
+  skr_tillgänglighet_skickade_väntande_kontakter.remissdatum AS remiss_datum,
+  NULL AS ankomst_datum,
+  skr_tillgänglighet_skickade_väntande_kontakter.beslutaktivitet AS beslut_datum,
+  NULL AS start_datum,
+  skr_tillgänglighet_skickade_väntande_kontakter.medicinsktmaldatum AS medicinskt_maldatum,
+  skr_tillgänglighet_skickade_väntande_kontakter.kommunkod AS lkf,
+  NULL AS hsaid_listning,
+  skr_tillgänglighet_skickade_väntande_kontakter.period_årmånad AS matperiod
+FROM skr_tillgänglighet_skickade_väntande_kontakter
+LEFT OUTER JOIN import_ifd_elvis_patient_patient_daglig
+  ON (skr_tillgänglighet_skickade_väntande_kontakter.personnr
+      = replace(import_ifd_elvis_patient_patient_daglig.personnummer, '-', '')
+  AND skr_tillgänglighet_skickade_väntande_kontakter.sjukhus
+      = import_ifd_elvis_patient_patient_daglig.sjukhus)
+WHERE skr_tillgänglighet_skickade_väntande_kontakter.aktivitet = '51101';
 
 
 -- ──────────────────────────────────────────────

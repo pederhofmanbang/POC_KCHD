@@ -68,17 +68,37 @@ dotnet run -- --odbc "DSN=DenodoVGR" -o fhir_bundle.json -v
 - **Spec:** `docs/fhir_serializer_spec.md`
 - **Kolumnlista:** Se spec §3
 
-## SSIS-integration
+## SSIS-integration (SQL Server 2019)
 
-### Alt 1: Execute Process Task (rekommenderas)
-Kör `KchdFhirSerializer.exe` som ett steg i SSIS-paketet.
+VGR kör SQL Server 2019 utan separat .NET 8 runtime.
+Lösning: **self-contained .exe** via Execute Process Task.
 
-### Alt 2: Script Component
-Kräver att projektet portas till .NET Framework 4.7.2 och Firely SDK 4.x.
-Ändra i `.csproj`:
-```xml
-<TargetFramework>net472</TargetFramework>
-<PackageReference Include="Hl7.Fhir.R4" Version="4.*" />
+### Publicera för Windows
+
+```bash
+dotnet publish KchdFhirSerializer.csproj -c Release -r win-x64 --self-contained -o publish/
+```
+
+Detta ger en mapp `publish/` med `KchdFhirSerializer.exe` + alla beroenden (~70 MB).
+Inga förkunskaper krävs på servern — .NET runtime ingår i .exe:n.
+
+### Konfigurera i SSIS
+
+1. Lägg till ett **Execute Process Task** i SSIS-paketet
+2. Konfiguration:
+   - **Executable:** `C:\sökväg\KchdFhirSerializer\KchdFhirSerializer.exe`
+   - **Arguments:** `--odbc "DSN=DenodoVGR" -o C:\output\fhir_bundle.json -v`
+   - **WorkingDirectory:** `C:\sökväg\KchdFhirSerializer\`
+3. Programmet läser från Denodos `fhir_measure_report`-vy, bygger FHIR Bundle, validerar, och skriver JSON
+
+### Leveranspaket
+
+```
+KchdFhirSerializer/
+├── KchdFhirSerializer.exe    ← Kör denna
+├── *.dll                     ← Beroenden (kopieras automatiskt)
+├── appsettings.json          ← ODBC-konfiguration
+└── README.md                 ← Denna fil
 ```
 
 ## Förväntat resultat
