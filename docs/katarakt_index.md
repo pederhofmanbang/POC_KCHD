@@ -82,6 +82,7 @@
 | fhir_serializer_spec.md | C#-projektspec: kolumner, pseudokod, NuGet, SSIS-integration |
 | prompt_fhir_mappning.md | Återanvändbar prompt för FHIR-mappning |
 | katarakt_index.md | DENNA FIL |
+| kchd_paketdistribution_dokumentation.md | Paketdistribution: repostruktur, branch-modell, versionshantering, regionspårning. Ligger i kchd-se org. |
 
 ## 5. TESTDATA
 
@@ -133,6 +134,7 @@
 | D27 | VGR-variant med kön-normalisering i basvyn | M/K→1/2 i src_genomford/src_vantande. All övrig kod identisk med generisk. Mönster för alla regionvarianter. | 2026-03-30 |
 | D28 | Self-contained .exe för C#-serialiseraren | VGR har SQL Server 2019, saknar .NET 8. Self-contained inkluderar runtime:n. net8.0, win-x64. | 2026-03-30 |
 | D29 | Två distributionsrepon under kchd-se | vantetid-katarakt + vantetid-katarakt-fhir. Regioner prenumererar via Watch → Releases. | 2026-03-30 |
+| D30 | VGR patientresa: beslut sker före remiss i deras system | total_patientresa och remiss_till_beslut ger felaktiga/nollvärden i VGR:s data. Orbit (op-planering) har bara ett datum. Beräkningslogiken är korrekt per SKR-spec, men resultatet är meningslöst för VGR. Påverkar inte VG-andel/median. | 2026-03-30 |
 
 ## 8. ÖPPNA PUNKTER
 
@@ -146,10 +148,11 @@
 | U8 | Fas 4: FHIR Procedure/ServiceRequest | Väntar på fas 2+3 i produktion |
 | ~~U9~~ | ~~Per-dimensioner för median/medel/patientresa~~ | ✅ Löst |
 | ~~U10~~ | ~~fhir_paket.vql: 3 kolumnfix~~ | ✅ Löst 2026-03-30 — testad: 440 rader, 12 MeasureReports, validering OK |
-| U11 | VGR utomläningstest | Väntar på VGR:s svar |
+| U11 | VGR:s siffror stämmer inte mot vantetider.se | Utomläningsfilter (is_hemregion=1) hjälpte inte. Behöver prata med SKR:s vantetider.se-team för att förstå exakt hur de beräknar. |
 | ~~U12~~ | ~~Pusha v2.4 + fhir_paket till GitHub~~ | ✅ Löst 2026-03-30 |
-| U13 | vantetid-katarakt: merga branch till main | Branch `claude/setup-claude-instructions-ZrllJ` |
-| U14 | vantetid-katarakt-fhir: ta bort python/ och docs/ | Intern testverktyg, ska inte vara med |
+| ~~U13~~ | ~~vantetid-katarakt: merga branch till main~~ | ✅ Klart |
+| ~~U14~~ | ~~vantetid-katarakt-fhir: ta bort python/ och docs/~~ | ✅ Klart |
+| U15 | VGR patientresa: beslut→remiss→start (omvänd ordning) | VGR:s system har beslut före remiss. I Orbit (op-planering) finns bara ett datum → remiss_till_beslut alltid 0. Påverkar inte VG-andel/median. |
 
 ## 9. SYSTEM-URI:ER (ref_fhir_system)
 
@@ -223,31 +226,51 @@ All kod, testdata, docs, demo-artefakter. KCHD:s interna arbetsmiljö.
 ### vantetid-katarakt (distribution — beräkning)
 **Repo:** https://github.com/kchd-se/vantetid-katarakt
 Det som regioner prenumererar på för lokal väntetidsberäkning.
-**Status:** Branch behöver mergas till main (U13).
+**Status:** Mergad till main. Branch `region/vgr` med VGR-variant.
 
 ### vantetid-katarakt-fhir (distribution — FHIR)
 **Repo:** https://github.com/kchd-se/vantetid-katarakt-fhir
 FHIR-transformering + C#-serialiserare. Kräver vantetid-katarakt.
 **Release:** v1.0.0 (self-contained .exe win-x64)
 **Beroende:** vantetid-katarakt v2.4+ (manifest.json)
-**Rensa:** Ta bort python/ och docs/ (U14)
 
 ---
 
 ## 13. NÄSTA STEG
 
+### Klart
+
 | Nr | Vad | Status |
 |----|-----|--------|
-| ~~1~~ | ~~Applicera 3 fixar i fhir_paket.vql~~ | ✅ Klart |
-| ~~2~~ | ~~Pusha till GitHub~~ | ✅ Klart |
+| ~~1~~ | ~~Applicera 3 fixar i fhir_paket.vql~~ | ✅ |
+| ~~2~~ | ~~Pusha till GitHub~~ | ✅ |
 | ~~3~~ | ~~Self-contained .exe~~ | ✅ Release v1.0.0 |
-| 4 | Merga vantetid-katarakt branch till main (U13) | 📋 |
-| 5 | Rensa vantetid-katarakt-fhir (U14) | 📋 |
-| 6 | **Skicka v2.4 + FHIR till VGR** (guide + mail) | 📋 Redo |
-| 7 | Vänta på VGR:s utomläningstest (U11) | ⏳ |
-| 8 | Fas 4: radnivå-FHIR | Väntar på fas 2+3 |
-| 9 | Fler regioner / vårdutbud | Framtida |
-| 10 | Vitalis: demo + paneldiskussion | Planeras |
+| ~~4~~ | ~~Merga vantetid-katarakt branch till main~~ | ✅ |
+| ~~5~~ | ~~Rensa vantetid-katarakt-fhir~~ | ✅ |
+| ~~6~~ | ~~Skicka v2.4 + FHIR till VGR~~ | ✅ |
+| ~~7~~ | ~~VGR utomläningstest~~ | ✅ Hjälpte inte — skillnaden kvarstår |
+
+### Pågående
+
+| Nr | Vad | Status |
+|----|-----|--------|
+| 8 | **Utreda avvikelse mot vantetider.se** (U11) — prata med SKR:s vantetider.se-team | 📋 |
+| 9 | Fas 4: radnivå-FHIR (Procedure/ServiceRequest) | Väntar på fas 2+3 |
+
+### Roadmap — väg mot produktion
+
+| Nr | Vad | Beskrivning | Status |
+|----|-----|-------------|--------|
+| 10 | **OMOP-mappning** | Från FHIR till OMOP i hubben, och/eller från källsystem till OMOP hos VGR. Eller båda. Avgör var transformeringen sker. | 📋 |
+| 11 | **API: FHIR → Hubb** | Från nuvarande FHIR-profiler (efter C#-serialiseraren) till att data faktiskt skickas till hubben via REST API. | 📋 |
+| 12 | **Hubb tar emot + lagrar** | Hubben tar emot beräknade värden, lagrar dem, och tar samtidigt in verklighetstrogen testdata för katarakt från andra regioner (simulerat, inte riktiga regioner). | 📋 |
+| 13 | **Visualisering — nytt vantetider.se** | Hubben sätter ihop visualiseringar som publiceras till VGR med jämförelser mot andra regioner. I praktiken en ny version av vantetider.se. | 📋 |
+| 14 | **Rapportmallar för regioner** | Ersätter QlikView-rapporterna som vantetider.se idag tillhandahåller. Radnivådata (pseudonymiserat) per region. Regionen laddar upp sin egen data lokalt — hubben tillhandahåller bara mallen (samma mönster som DQ-dashboarden). VGR testar med katarakt. | 📋 |
+| 15 | **OMOP-baserade rapportmallar** | Efter OMOP-mappning av regionernas data fungerar rapportmallarna automatiskt för alla regioner som använder OMOP. | 📋 |
+| 16 | **Pseudonymiseringspaket** | Paket som regioner kör för att pseudonymisera väntetidsdata på radnivå innan visualisering/delning. | 📋 |
+| 17 | **Anonymiseringspaket** | Paket för anonymisering av data. | 📋 |
+| 18 | Vitalis: demo + paneldiskussion | Planeras |
+| 19 | Fler regioner / vårdutbud | Framtida |
 
 ---
 
