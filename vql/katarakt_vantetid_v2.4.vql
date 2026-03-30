@@ -398,35 +398,112 @@ GROUP BY g.op_ar, g.op_manad, g.hsaid_vardenhet, g.hsaid_region,
 
 
 -- ──────────────────────────────────────────────
--- 03b: Per-dimension-vyer (OFÖRÄNDRADE)
+-- 03b: Per-dimension-vyer (UTÖKADE i v2.4)
+--
+-- Ändring: Alla 5 per-dim-vyer har nu samma KPI-kolumner
+-- som res_kpi_manad. Behövs för att FHIR-paketet ska kunna
+-- producera alla 5 KPI:er (andel, median, medel, patientresa,
+-- remiss→beslut) per dimension, inte bara antal + median.
+--
+-- Kolumnnamnen matchar res_kpi_manad exakt (ar, manad,
+-- antal_genomforda, median_vantetid, etc.) så att FHIR-paketet
+-- kan använda identisk SELECT-struktur för total- och per-dim-block.
 -- ──────────────────────────────────────────────
 
 CREATE OR REPLACE VIEW res_kpi_per_yrke AS
-SELECT op_ar, op_manad, yrkeskategori,
-  COUNT(*) AS antal, MEDIAN(vantetid_dagar) AS median_vt,
-  CAST(COUNT(CASE WHEN uppfyller_vg=1 THEN 1 END) AS DOUBLE)
-    / NULLIF(COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END),0) AS andel_90
-FROM calc_vantetid_genomford GROUP BY op_ar, op_manad, yrkeskategori;
+SELECT
+  op_ar AS ar, op_manad AS manad,
+  hsaid_vardenhet, hsaid_region, regionkod, sjukhuskod, sjukhusnamn,
+  yrkeskategori,
+  COUNT(*) AS antal_genomforda,
+  MEDIAN(vantetid_dagar) AS median_vantetid,
+  AVG(CAST(vantetid_dagar AS DOUBLE)) AS medel_vantetid,
+  COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END) AS namnare_vg,
+  COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' AND vantetid_dagar<=90 THEN 1 END) AS taljare_vg,
+  CASE WHEN COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END) > 0
+    THEN CAST(COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' AND vantetid_dagar<=90 THEN 1 END) AS DOUBLE)
+       / COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END)
+    ELSE NULL END AS andel_inom_90,
+  MEDIAN(total_patientresa_dagar) AS median_total_patientresa,
+  MEDIAN(remiss_till_beslut_dagar) AS median_remiss_till_beslut
+FROM calc_vantetid_genomford
+GROUP BY op_ar, op_manad, hsaid_vardenhet, hsaid_region, regionkod, sjukhuskod, sjukhusnamn, yrkeskategori;
 
 CREATE OR REPLACE VIEW res_kpi_per_kontaktform AS
-SELECT op_ar, op_manad, vardkontakttyp,
-  COUNT(*) AS antal, MEDIAN(vantetid_dagar) AS median_vt
-FROM calc_vantetid_genomford GROUP BY op_ar, op_manad, vardkontakttyp;
+SELECT
+  op_ar AS ar, op_manad AS manad,
+  hsaid_vardenhet, hsaid_region, regionkod, sjukhuskod, sjukhusnamn,
+  vardkontakttyp,
+  COUNT(*) AS antal_genomforda,
+  MEDIAN(vantetid_dagar) AS median_vantetid,
+  AVG(CAST(vantetid_dagar AS DOUBLE)) AS medel_vantetid,
+  COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END) AS namnare_vg,
+  COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' AND vantetid_dagar<=90 THEN 1 END) AS taljare_vg,
+  CASE WHEN COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END) > 0
+    THEN CAST(COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' AND vantetid_dagar<=90 THEN 1 END) AS DOUBLE)
+       / COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END)
+    ELSE NULL END AS andel_inom_90,
+  MEDIAN(total_patientresa_dagar) AS median_total_patientresa,
+  MEDIAN(remiss_till_beslut_dagar) AS median_remiss_till_beslut
+FROM calc_vantetid_genomford
+GROUP BY op_ar, op_manad, hsaid_vardenhet, hsaid_region, regionkod, sjukhuskod, sjukhusnamn, vardkontakttyp;
 
 CREATE OR REPLACE VIEW res_kpi_per_bokning AS
-SELECT op_ar, op_manad, bokningssatt,
-  COUNT(*) AS antal, MEDIAN(vantetid_dagar) AS median_vt
-FROM calc_vantetid_genomford GROUP BY op_ar, op_manad, bokningssatt;
+SELECT
+  op_ar AS ar, op_manad AS manad,
+  hsaid_vardenhet, hsaid_region, regionkod, sjukhuskod, sjukhusnamn,
+  bokningssatt,
+  COUNT(*) AS antal_genomforda,
+  MEDIAN(vantetid_dagar) AS median_vantetid,
+  AVG(CAST(vantetid_dagar AS DOUBLE)) AS medel_vantetid,
+  COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END) AS namnare_vg,
+  COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' AND vantetid_dagar<=90 THEN 1 END) AS taljare_vg,
+  CASE WHEN COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END) > 0
+    THEN CAST(COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' AND vantetid_dagar<=90 THEN 1 END) AS DOUBLE)
+       / COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END)
+    ELSE NULL END AS andel_inom_90,
+  MEDIAN(total_patientresa_dagar) AS median_total_patientresa,
+  MEDIAN(remiss_till_beslut_dagar) AS median_remiss_till_beslut
+FROM calc_vantetid_genomford
+GROUP BY op_ar, op_manad, hsaid_vardenhet, hsaid_region, regionkod, sjukhuskod, sjukhusnamn, bokningssatt;
 
 CREATE OR REPLACE VIEW res_kpi_per_remittent AS
-SELECT op_ar, op_manad, remittenttyp, remittent_hsaid,
-  COUNT(*) AS antal, MEDIAN(vantetid_dagar) AS median_vt
-FROM calc_vantetid_genomford GROUP BY op_ar, op_manad, remittenttyp, remittent_hsaid;
+SELECT
+  op_ar AS ar, op_manad AS manad,
+  hsaid_vardenhet, hsaid_region, regionkod, sjukhuskod, sjukhusnamn,
+  remittenttyp, remittent_hsaid,
+  COUNT(*) AS antal_genomforda,
+  MEDIAN(vantetid_dagar) AS median_vantetid,
+  AVG(CAST(vantetid_dagar AS DOUBLE)) AS medel_vantetid,
+  COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END) AS namnare_vg,
+  COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' AND vantetid_dagar<=90 THEN 1 END) AS taljare_vg,
+  CASE WHEN COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END) > 0
+    THEN CAST(COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' AND vantetid_dagar<=90 THEN 1 END) AS DOUBLE)
+       / COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END)
+    ELSE NULL END AS andel_inom_90,
+  MEDIAN(total_patientresa_dagar) AS median_total_patientresa,
+  MEDIAN(remiss_till_beslut_dagar) AS median_remiss_till_beslut
+FROM calc_vantetid_genomford
+GROUP BY op_ar, op_manad, hsaid_vardenhet, hsaid_region, regionkod, sjukhuskod, sjukhusnamn, remittenttyp, remittent_hsaid;
 
 CREATE OR REPLACE VIEW res_kpi_per_kommun AS
-SELECT op_ar, op_manad, lkf,
-  COUNT(*) AS antal, MEDIAN(vantetid_dagar) AS median_vt
-FROM calc_vantetid_genomford GROUP BY op_ar, op_manad, lkf;
+SELECT
+  op_ar AS ar, op_manad AS manad,
+  hsaid_vardenhet, hsaid_region, regionkod, sjukhuskod, sjukhusnamn,
+  lkf,
+  COUNT(*) AS antal_genomforda,
+  MEDIAN(vantetid_dagar) AS median_vantetid,
+  AVG(CAST(vantetid_dagar AS DOUBLE)) AS medel_vantetid,
+  COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END) AS namnare_vg,
+  COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' AND vantetid_dagar<=90 THEN 1 END) AS taljare_vg,
+  CASE WHEN COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END) > 0
+    THEN CAST(COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' AND vantetid_dagar<=90 THEN 1 END) AS DOUBLE)
+       / COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END)
+    ELSE NULL END AS andel_inom_90,
+  MEDIAN(total_patientresa_dagar) AS median_total_patientresa,
+  MEDIAN(remiss_till_beslut_dagar) AS median_remiss_till_beslut
+FROM calc_vantetid_genomford
+GROUP BY op_ar, op_manad, hsaid_vardenhet, hsaid_region, regionkod, sjukhuskod, sjukhusnamn, lkf;
 
 
 -- ──────────────────────────────────────────────
@@ -462,290 +539,6 @@ SELECT
   rapportdatum, vantestatus, bryter_vg
 FROM calc_vantande;
 
-
--- ──────────────────────────────────────────────
--- 04a: verif_jamforelse (ÄNDRAD i v2.4)
---
--- Ändring: sjukhusnamn tillagt i SELECT och GROUP BY.
--- Anledning: vantetider.se visar per sjukhus — man kan
--- inte jämföra utan att ha per-sjukhus-uppdelning.
--- Tack till VGR som visade att detta behövdes.
--- ──────────────────────────────────────────────
-
-CREATE OR REPLACE VIEW verif_jamforelse AS
--- Andel inom 90 dagar (VG-andel)
-SELECT op_manad AS manad, sjukhusnamn AS sjukhus,
-  'Andel inom 90 dagar' AS kpi,
-  CAST(CAST(COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' AND vantetid_dagar<=90 THEN 1 END) AS DOUBLE)
-    / NULLIF(COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END), 0) * 100 AS DECIMAL(5,1)) AS beraknat_varde,
-  '%' AS enhet,
-  COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' THEN 1 END) AS namnare,
-  COUNT(CASE WHEN vardgaranti='1' AND COALESCE(avvikelsekod,'')<>'1' AND vantetid_dagar<=90 THEN 1 END) AS taljare,
-  'vantetider.se > Specialiserad vard > Aktuellt vardgarantilage > Valj region + Ogonsjukvard + Operation/atgard' AS var_pa_vantetider_se,
-  'Spindeldiagrammet visar andel i %. Valj ratt period och sjukhus.' AS kommentar
-FROM calc_vantetid_genomford
-GROUP BY op_manad, sjukhusnamn
-
-UNION ALL
--- Medianväntetid
-SELECT op_manad, sjukhusnamn,
-  'Medianvantetid (alla genomforda)' AS kpi,
-  CAST(MEDIAN(vantetid_dagar) AS DECIMAL(5,1)),
-  'dagar', COUNT(*), NULL,
-  'vantetider.se > Specialiserad vard > Medel- och medianvantetid > Valj region + Ogonsjukvard + Operation/atgard',
-  'Visa median (inte medel).'
-FROM calc_vantetid_genomford
-GROUP BY op_manad, sjukhusnamn
-
-UNION ALL
--- Medelväntetid
-SELECT op_manad, sjukhusnamn,
-  'Medelvantetid (alla genomforda)',
-  CAST(AVG(CAST(vantetid_dagar AS DOUBLE)) AS DECIMAL(5,1)),
-  'dagar', COUNT(*), NULL,
-  'vantetider.se > Specialiserad vard > Medel- och medianvantetid > Valj region + Ogonsjukvard + Operation/atgard',
-  'Visa medel (inte median).'
-FROM calc_vantetid_genomford
-GROUP BY op_manad, sjukhusnamn
-
-UNION ALL
--- Antal genomförda
-SELECT op_manad, sjukhusnamn,
-  'Antal genomforda operationer',
-  CAST(COUNT(*) AS DECIMAL(10,0)),
-  'st', NULL, NULL,
-  'vantetider.se > Specialiserad vard > Utokad uppfoljning > Valj region + Ogonsjukvard + Operation/atgard',
-  'Antal visas i tabellen. Valj ratt manad.'
-FROM calc_vantetid_genomford
-GROUP BY op_manad, sjukhusnamn
-
-UNION ALL
--- Antal väntande
-SELECT matperiod, sjukhusnamn,
-  'Antal vantande',
-  CAST(COUNT(*) AS DECIMAL(10,0)),
-  'st', NULL, NULL,
-  'vantetider.se > Specialiserad vard > Utokad uppfoljning > Valj region + Ogonsjukvard + Fliken Vantande',
-  'Ogonblicksbild sista dag i manaden.'
-FROM calc_vantande
-GROUP BY matperiod, sjukhusnamn
-
-UNION ALL
--- Väntetidsfördelning (6 intervall)
-SELECT op_manad, sjukhusnamn,
-  '  Intervall 0-30 dagar',
-  CAST(COUNT(CASE WHEN vantetid_intervall='0-30' THEN 1 END) AS DECIMAL(10,0)),
-  'st', NULL, NULL,
-  'vantetider.se > Utokad uppfoljning > Valj region + Ogon + Op > Fordelning',
-  'Stapeldiagrammet visar antal per intervall.'
-FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn
-UNION ALL
-SELECT op_manad, sjukhusnamn,
-  '  Intervall 31-60 dagar',
-  CAST(COUNT(CASE WHEN vantetid_intervall='31-60' THEN 1 END) AS DECIMAL(10,0)),
-  'st', NULL, NULL, '', ''
-FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn
-UNION ALL
-SELECT op_manad, sjukhusnamn,
-  '  Intervall 61-90 dagar',
-  CAST(COUNT(CASE WHEN vantetid_intervall='61-90' THEN 1 END) AS DECIMAL(10,0)),
-  'st', NULL, NULL, '', ''
-FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn
-UNION ALL
-SELECT op_manad, sjukhusnamn,
-  '  Intervall 91-120 dagar',
-  CAST(COUNT(CASE WHEN vantetid_intervall='91-120' THEN 1 END) AS DECIMAL(10,0)),
-  'st', NULL, NULL, '', ''
-FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn
-UNION ALL
-SELECT op_manad, sjukhusnamn,
-  '  Intervall 121-180 dagar',
-  CAST(COUNT(CASE WHEN vantetid_intervall='121-180' THEN 1 END) AS DECIMAL(10,0)),
-  'st', NULL, NULL, '', ''
-FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn
-UNION ALL
-SELECT op_manad, sjukhusnamn,
-  '  Intervall >180 dagar',
-  CAST(COUNT(CASE WHEN vantetid_intervall='>180' THEN 1 END) AS DECIMAL(10,0)),
-  'st', NULL, NULL, '', ''
-FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn
-
-UNION ALL
--- Per kön
-SELECT op_manad, sjukhusnamn,
-  'Median man',
-  CAST(MEDIAN(CASE WHEN kon='1' THEN vantetid_dagar END) AS DECIMAL(5,1)),
-  'dagar',
-  COUNT(CASE WHEN kon='1' THEN 1 END), NULL,
-  'vantetider.se > Utokad uppfoljning > Valj region + Ogon + Op > Filtrera pa kon',
-  'Valj Man/Kvinna i dropdown.'
-FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn
-UNION ALL
-SELECT op_manad, sjukhusnamn,
-  'Median kvinna',
-  CAST(MEDIAN(CASE WHEN kon='2' THEN vantetid_dagar END) AS DECIMAL(5,1)),
-  'dagar',
-  COUNT(CASE WHEN kon='2' THEN 1 END), NULL, '', ''
-FROM calc_vantetid_genomford GROUP BY op_manad, sjukhusnamn;
-
-
--- ──────────────────────────────────────────────
--- 05: dq_rapport_data (ÄNDRAD i v2.4)
---
--- Ändring: DQ6-raderna inkluderar nu sjukhusnamn
--- via CONCAT så att varje sjukhus syns separat.
--- Anledning: VGR visade att per-sjukhus DQ6 behövs
--- för att se vilka sjukhus som avviker.
--- ──────────────────────────────────────────────
-
-CREATE OR REPLACE VIEW dq_rapport_data AS
--- DQ0: Existens
-SELECT 'DQ0' AS dq, 'existens' AS kontroll, 'src_genomford' AS objekt,
-  CAST(COUNT(*) AS VARCHAR) AS varde,
-  CASE WHEN COUNT(*) > 0 THEN 'OK' ELSE 'FEL' END AS status
-FROM src_genomford
-UNION ALL
-SELECT 'DQ0', 'existens', 'src_vantande',
-  CAST(COUNT(*) AS VARCHAR),
-  CASE WHEN COUNT(*) > 0 THEN 'OK' ELSE 'FEL' END
-FROM src_vantande
-
-UNION ALL
--- DQ1: Null-kontroll (genomförda)
-SELECT 'DQ1', 'null_genomford', 'beslut_datum',
-  CAST(SUM(CASE WHEN beslut_datum IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
-  CASE WHEN SUM(CASE WHEN beslut_datum IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
-FROM src_genomford
-UNION ALL
-SELECT 'DQ1', 'null_genomford', 'start_datum',
-  CAST(SUM(CASE WHEN start_datum IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
-  CASE WHEN SUM(CASE WHEN start_datum IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
-FROM src_genomford
-UNION ALL
-SELECT 'DQ1', 'null_genomford', 'kva_kod',
-  CAST(SUM(CASE WHEN kva_kod IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
-  CASE WHEN SUM(CASE WHEN kva_kod IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
-FROM src_genomford
-UNION ALL
-SELECT 'DQ1', 'null_genomford', 'vardgaranti',
-  CAST(SUM(CASE WHEN vardgaranti IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
-  CASE WHEN SUM(CASE WHEN vardgaranti IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
-FROM src_genomford
-UNION ALL
-SELECT 'DQ1', 'null_genomford', 'kon',
-  CAST(SUM(CASE WHEN kon IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
-  CASE WHEN SUM(CASE WHEN kon IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
-FROM src_genomford
-UNION ALL
-SELECT 'DQ1', 'null_genomford', 'fodelsear',
-  CAST(SUM(CASE WHEN fodelsear IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
-  CASE WHEN SUM(CASE WHEN fodelsear IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
-FROM src_genomford
-
-UNION ALL
--- DQ1: Null-kontroll (väntande)
-SELECT 'DQ1', 'null_vantande', 'beslut_datum',
-  CAST(SUM(CASE WHEN beslut_datum IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
-  CASE WHEN SUM(CASE WHEN beslut_datum IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
-FROM src_vantande
-UNION ALL
-SELECT 'DQ1', 'null_vantande', 'kva_kod',
-  CAST(SUM(CASE WHEN kva_kod IS NULL THEN 1 ELSE 0 END) AS VARCHAR),
-  CASE WHEN SUM(CASE WHEN kva_kod IS NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
-FROM src_vantande
-
-UNION ALL
--- DQ2: Domänkontroll
-SELECT 'DQ2', 'doman', 'kva_ej_i_ref',
-  CAST(COUNT(*) AS VARCHAR),
-  CASE WHEN COUNT(*) = 0 THEN 'OK' ELSE 'FEL' END
-FROM src_genomford g LEFT JOIN ref_kva_katarakt r ON g.kva_kod = r.kva_kod
-WHERE r.kva_kod IS NULL AND g.kva_kod IS NOT NULL
-UNION ALL
-SELECT 'DQ2', 'doman', 'regionkod_ej_51',
-  CAST(SUM(CASE WHEN regionkod <> '51' THEN 1 ELSE 0 END) AS VARCHAR),
-  CASE WHEN SUM(CASE WHEN regionkod <> '51' THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
-FROM src_genomford
-UNION ALL
-SELECT 'DQ2', 'doman', 'mvo_ej_511',
-  CAST(SUM(CASE WHEN mvo_kod <> '511' THEN 1 ELSE 0 END) AS VARCHAR),
-  CASE WHEN SUM(CASE WHEN mvo_kod <> '511' THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
-FROM src_genomford
-
-UNION ALL
--- DQ3: Intervallkontroll
-SELECT 'DQ3', 'intervall', 'negativ_vantetid',
-  CAST(SUM(CASE WHEN vantetid_dagar < 0 THEN 1 ELSE 0 END) AS VARCHAR),
-  CASE WHEN SUM(CASE WHEN vantetid_dagar < 0 THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
-FROM calc_vantetid_genomford
-UNION ALL
-SELECT 'DQ3', 'intervall', 'orimligt_fodelsear',
-  CAST(SUM(CASE WHEN fodelsear < 1920 OR fodelsear > 2026 THEN 1 ELSE 0 END) AS VARCHAR),
-  CASE WHEN SUM(CASE WHEN fodelsear < 1920 OR fodelsear > 2026 THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
-FROM calc_vantetid_genomford
-UNION ALL
-SELECT 'DQ3', 'intervall', 'vantande_med_start',
-  CAST(SUM(CASE WHEN start_datum IS NOT NULL THEN 1 ELSE 0 END) AS VARCHAR),
-  CASE WHEN SUM(CASE WHEN start_datum IS NOT NULL THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEL' END
-FROM src_vantande
-
-UNION ALL
--- DQ4: Ifyllnadsgrad (genomförda)
-SELECT 'DQ4', 'ifyllnad_genomford', 'beslut_datum',
-  CAST(CAST(CAST(SUM(CASE WHEN beslut_datum > DATE '1900-01-01' THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
-FROM src_genomford
-UNION ALL
-SELECT 'DQ4', 'ifyllnad_genomford', 'medicinskt_maldatum',
-  CAST(CAST(CAST(SUM(CASE WHEN medicinskt_maldatum > DATE '1900-01-01' THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
-FROM src_genomford
-UNION ALL
-SELECT 'DQ4', 'ifyllnad_genomford', 'avvikelsekod',
-  CAST(CAST(CAST(SUM(CASE WHEN avvikelsekod IS NOT NULL THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
-FROM src_genomford
-UNION ALL
-SELECT 'DQ4', 'ifyllnad_genomford', 'lkf',
-  CAST(CAST(CAST(SUM(CASE WHEN lkf <> '9999' AND lkf <> '0000' THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
-FROM src_genomford
-UNION ALL
-SELECT 'DQ4', 'ifyllnad_genomford', 'hsaid_listning',
-  CAST(CAST(CAST(SUM(CASE WHEN hsaid_listning IS NOT NULL THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
-FROM src_genomford
-UNION ALL
-SELECT 'DQ4', 'ifyllnad_genomford', 'remiss_datum',
-  CAST(CAST(CAST(SUM(CASE WHEN remiss_datum > DATE '1900-01-01' THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
-FROM src_genomford
-UNION ALL
-SELECT 'DQ4', 'ifyllnad_genomford', 'remittent_hsaid',
-  CAST(CAST(CAST(SUM(CASE WHEN remittent_hsaid IS NOT NULL THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
-FROM src_genomford
-
-UNION ALL
--- DQ4: Ifyllnadsgrad (väntande)
-SELECT 'DQ4', 'ifyllnad_vantande', 'beslut_datum',
-  CAST(CAST(CAST(SUM(CASE WHEN beslut_datum > DATE '1900-01-01' THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
-FROM src_vantande
-UNION ALL
-SELECT 'DQ4', 'ifyllnad_vantande', 'medicinskt_maldatum',
-  CAST(CAST(CAST(SUM(CASE WHEN medicinskt_maldatum > DATE '1900-01-01' THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
-FROM src_vantande
-UNION ALL
-SELECT 'DQ4', 'ifyllnad_vantande', 'remiss_datum',
-  CAST(CAST(CAST(SUM(CASE WHEN remiss_datum > DATE '1900-01-01' THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) * 100 AS DECIMAL(5,1)) AS VARCHAR), 'INFO'
-FROM src_vantande
-
-UNION ALL
--- DQ6: Rimlighet (ÄNDRAD i v2.4 — nu per sjukhus)
-SELECT 'DQ6', 'rimlighet',
-  CONCAT('andel_inom_90 (', sjukhusnamn, ')'),
-  CAST(CAST(andel_inom_90 * 100 AS DECIMAL(5,1)) AS VARCHAR),
-  CASE WHEN andel_inom_90 >= 0.50 AND andel_inom_90 <= 1.0 THEN 'OK' ELSE 'FEL' END
-FROM res_kpi_manad WHERE andel_inom_90 IS NOT NULL
-UNION ALL
-SELECT 'DQ6', 'rimlighet',
-  CONCAT('median_vantetid (', sjukhusnamn, ')'),
-  CAST(median_vantetid AS VARCHAR),
-  CASE WHEN median_vantetid >= 1 AND median_vantetid <= 365 THEN 'OK' ELSE 'FEL' END
-FROM res_kpi_manad WHERE median_vantetid IS NOT NULL;
 
 
 -- ============================================================
