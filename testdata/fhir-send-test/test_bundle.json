@@ -1,0 +1,89 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "MeasureReport",
+        "status": "complete",
+        "type": "summary",
+        "measure": "https://kchd.se/fhir/Measure/vantetid-katarakt",
+        "period": {
+          "start": "2026-01-01",
+          "end": "2026-01-31"
+        },
+        "reporter": {
+          "identifier": {
+            "system": "urn:oid:1.2.752.129.2.1.4.1",
+            "value": "SE2321000131-E000000006716"
+          },
+          "display": "Sahlgrenska Universitetssjukhuset"
+        },
+        "group": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "https://kchd.se/fhir/CodeSystem/vantetid-grupp",
+                  "code": "vantetid-forsta-besok",
+                  "display": "Väntetid till första besök"
+                }
+              ]
+            },
+            "measureScore": {
+              "value": 42,
+              "unit": "dagar",
+              "system": "http://unitsofmeasure.org",
+              "code": "d"
+            },
+            "population": [
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "measure-population",
+                      "display": "Measure Population"
+                    }
+                  ]
+                },
+                "count": 127
+              }
+            ]
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "https://kchd.se/fhir/CodeSystem/vantetid-grupp",
+                  "code": "vantetid-operation",
+                  "display": "Väntetid till operation"
+                }
+              ]
+            },
+            "measureScore": {
+              "value": 89,
+              "unit": "dagar",
+              "system": "http://unitsofmeasure.org",
+              "code": "d"
+            },
+            "population": [
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "measure-population",
+                      "display": "Measure Population"
+                    }
+                  ]
+                },
+                "count": 98
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
